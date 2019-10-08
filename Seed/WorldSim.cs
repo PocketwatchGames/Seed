@@ -9,7 +9,7 @@ namespace Seed
 {
 	public partial class World
 	{
-		private int WrapX(int x)
+		public int WrapX(int x)
 		{
 			if (x < 0)
 			{
@@ -21,7 +21,7 @@ namespace Seed
 			}
 			return x;
 		}
-		private int WrapY(int y)
+		public int WrapY(int y)
 		{
 			return MathHelper.Clamp(y, 0, Size - 1);
 		}

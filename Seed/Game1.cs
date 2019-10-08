@@ -13,10 +13,8 @@ namespace Seed
 		GraphicsDeviceManager graphics;
 		SpriteBatch spriteBatch;
 
-		KeyboardState _lastKeyboardState;
 		World world;
-		List<float> _timeScales = new List<float> { 0, 5, 20, 100 };
-		int _timeScaleIndex = 0;
+		WorldGUI gui;
 
 		public Game1()
 		{
@@ -39,8 +37,8 @@ namespace Seed
 			// TODO: Add your initialization logic here
 			world = new World();
 			world.Init(100);
-			world.TimeScale = _timeScales[_timeScaleIndex];
 
+			gui = new WorldGUI(world);
 
 			world.Generate();
 
@@ -56,7 +54,7 @@ namespace Seed
 		{
 			// Create a new SpriteBatch, which can be used to draw textures.
 			spriteBatch = new SpriteBatch(GraphicsDevice);
-			world.LoadContent(GraphicsDevice, Content);
+			gui.LoadContent(GraphicsDevice, Content);
 
 			// TODO: use this.Content to load your game content here
 		}
@@ -77,49 +75,12 @@ namespace Seed
 		/// <param name="gameTime">Provides a snapshot of timing values.</param>
 		protected override void Update(GameTime gameTime)
 		{
-			if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-				Exit();
 
-			var keyboardState = Keyboard.GetState();
-			var mouseState = Mouse.GetState();
-			foreach (var k in world.LayerDisplayKeys)
-			{
-				if (WasKeyJustPressed(k.Item2, ref keyboardState, ref _lastKeyboardState))
-				{
-					world.ShowLayers ^= k.Item1;
-				}
-			}
-			if (WasKeyJustPressed(Keys.OemOpenBrackets, ref keyboardState, ref _lastKeyboardState))
-			{
-
-				_timeScaleIndex = _timeScaleIndex-1;
-				if (_timeScaleIndex < 0)
-				{
-					_timeScaleIndex = 0;
-					world.TimeTillTick = 0;
-				}
-				world.TimeScale = _timeScales[_timeScaleIndex];
-			}
-			if (WasKeyJustPressed(Keys.OemCloseBrackets, ref keyboardState, ref _lastKeyboardState))
-			{
-				_timeScaleIndex = MathHelper.Min(_timeScales.Count-1, _timeScaleIndex + 1);
-				world.TimeScale = _timeScales[_timeScaleIndex];
-			}
-
-			world.TileInfoPoint = new Point(MathHelper.Clamp(mouseState.X / world.tileSize, 0, world.Size-1), MathHelper.Clamp(mouseState.Y / world.tileSize, 0, world.Size-1));
-
-			_lastKeyboardState = keyboardState;
-
-
-			world.Update(gameTime);
+			gui.Update(gameTime);
 
 			base.Update(gameTime);
 		}
 
-		bool WasKeyJustPressed(Keys k, ref KeyboardState state, ref KeyboardState lastState )
-		{
-			return state.IsKeyDown(k) && !lastState.IsKeyDown(k);
-		}
 
 		/// <summary>
 		/// This is called when the game should draw itself.
@@ -129,7 +90,7 @@ namespace Seed
 		{
 			GraphicsDevice.Clear(Color.CornflowerBlue);
 
-			world.Draw(gameTime, spriteBatch);
+			gui.Draw(gameTime, spriteBatch);
 
 			base.Draw(gameTime);
 		}

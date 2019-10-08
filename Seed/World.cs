@@ -51,7 +51,7 @@ namespace Seed
 		const float EvapRate =  0.0001f / TicksPerYear;
 		const float tradeWindSpeed = 1.0f / TicksPerYear;
 		const float RainfallRate = 1.0f / TicksPerYear;
-		const float FlowSpeed = 1.0f / TicksPerYear;
+		const float FlowSpeed = 10.0f / TicksPerYear;
 		const float MaxWaterTableDepth = 2.0f;
 		const float MinWaterTableDepth = 0.2f;
 		const float MaxGroundWater = MaxWaterTableDepth;
@@ -67,6 +67,7 @@ namespace Seed
 		public int LastRenderStateIndex;
 		public int NextRenderStateIndex;
 		public object DrawLock = new object();
+		public object InputLock = new object();
 		public class State : ICloneable
 		{
 			public int Ticks;
@@ -141,17 +142,20 @@ namespace Seed
 
 			_simTask = Task.Run(() =>
 			{
-				while (TimeTillTick <= 0)
+				lock (InputLock)
 				{
-					TimeTillTick += TicksPerSecond;
-					int nextStateIndex = CurStateIndex;
-					while (nextStateIndex == LastRenderStateIndex || nextStateIndex == NextRenderStateIndex)
+					while (TimeTillTick <= 0)
 					{
-						nextStateIndex = (nextStateIndex + 1) % StateCount;
-					}
+						TimeTillTick += TicksPerSecond;
+						int nextStateIndex = CurStateIndex;
+						while (nextStateIndex == LastRenderStateIndex || nextStateIndex == NextRenderStateIndex)
+						{
+							nextStateIndex = (nextStateIndex + 1) % StateCount;
+						}
 
-					Tick(States[CurStateIndex], States[nextStateIndex]);
-					CurStateIndex = nextStateIndex;
+						Tick(States[CurStateIndex], States[nextStateIndex]);
+						CurStateIndex = nextStateIndex;
+					}
 				}
 				lock (DrawLock)
 				{
@@ -186,5 +190,30 @@ namespace Seed
 			return ((float)y / Size) * 2 - 1.0f;
 		}
 
+		public void UpdateGradient(int x, int y, State state)
+		{
+			int index = GetIndex(x, y);
+			float e = state.Elevation[index];
+			float west = state.Elevation[GetIndex(WrapX(x - 1), y)];
+			float east = state.Elevation[GetIndex(WrapX(x + 1), y)];
+			float north = state.Elevation[GetIndex(x, WrapY(y - 1))];
+			float south = state.Elevation[GetIndex(x, WrapY(y + 1))];
+			if (west < e && west < east && west < north && west < south)
+			{
+				state.Gradient[index] = new Vector2(west - e, 0);
+			}
+			else if (east < e && east < west && east < north && east < south)
+			{
+				state.Gradient[index] = new Vector2(e - east, 0);
+			}
+			else if (north < e && north < west && north < east && north < south)
+			{
+				state.Gradient[index] = new Vector2(0, north - e);
+			}
+			else if (south < e && south < west && south < north && south < east)
+			{
+				state.Gradient[index] = new Vector2(0, e - south);
+			}
+		}
 	}
 }

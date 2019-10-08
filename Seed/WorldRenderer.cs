@@ -33,34 +33,11 @@ namespace Seed
 //			Rainfall,
 		}
 
-		Texture2D whiteTex;
-		SpriteFont font;
 
 		public int tileSize = 10;
-		public bool TileInfoActive = true;
-		public Point TileInfoPoint;
-		public Layers ShowLayers = Layers.ElevationSubtle | Layers.Water | Layers.SoilFertility | Layers.Vegetation | Layers.Animals;
 
-		public List<Tuple<Layers, Keys>> LayerDisplayKeys = new List<Tuple<Layers, Keys>>()
-		{
-			new Tuple<Layers, Keys>(Layers.Water, Keys.F1),
-			new Tuple<Layers, Keys>(Layers.Elevation, Keys.F2),
-			new Tuple<Layers, Keys>(Layers.GroundWater, Keys.F3),
-			new Tuple<Layers, Keys>(Layers.CloudCoverage, Keys.F4),
-			new Tuple<Layers, Keys>(Layers.Temperature, Keys.F5),
-			new Tuple<Layers, Keys>(Layers.Wind, Keys.F6),
-		};
 
-		public void LoadContent(GraphicsDevice graphics, ContentManager content)
-		{
-			whiteTex = new Texture2D(graphics, 1, 1);
-			Color[] c = new Color[] { Color.White };
-			whiteTex.SetData(c);
-
-			font = content.Load<SpriteFont>("fonts/infofont");
-		}
-
-		public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
+		public void Draw(GameTime gameTime, SpriteBatch spriteBatch, Layers showLayers, Texture2D whiteTex)
 		{
 			lock (DrawLock) {
 				spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
@@ -77,13 +54,13 @@ namespace Seed
 						Color color = Color.White;
 						float elevation = state.Elevation[index];
 						float normalizedElevation = (elevation - MinElevation) / (MaxElevation - MinElevation);
-						bool drawOcean = elevation <= state.SeaLevel && ShowLayers.HasFlag(Layers.Water);
+						bool drawOcean = elevation <= state.SeaLevel && showLayers.HasFlag(Layers.Water);
 
 						// Base color
 
 						if (drawOcean)
 						{
-							if (ShowLayers.HasFlag(Layers.ElevationSubtle))
+							if (showLayers.HasFlag(Layers.ElevationSubtle))
 							{
 								color = Color.Lerp(Color.DarkBlue, Color.Blue, (state.SeaLevel - elevation) / MinElevation);
 							}
@@ -94,30 +71,30 @@ namespace Seed
 						}
 						else
 						{
-							if (ShowLayers.HasFlag(Layers.SoilFertility))
+							if (showLayers.HasFlag(Layers.SoilFertility))
 							{
 								color = Color.Lerp(Color.Gray, Color.Brown, state.SoilFertility[index]);
 							}
 
-							if (ShowLayers.HasFlag(Layers.ElevationSubtle))
+							if (showLayers.HasFlag(Layers.ElevationSubtle))
 							{
 								if (normalizedElevation < 0)
 								{
-									color = Color.Lerp(Color.Black, color, (normalizedElevation - 0.5f) * 2);
+									color = Color.Lerp(Color.Black, color, (normalizedElevation - 0.5f) * 5);
 								}
 								else
 								{
-									color = Color.Lerp(color, Color.White, (normalizedElevation - 0.5f) * 2);
+									color = Color.Lerp(color, Color.White, (normalizedElevation - 0.5f) * 5);
 								}
 							}
 
-							if (ShowLayers.HasFlag(Layers.Vegetation))
+							if (showLayers.HasFlag(Layers.Vegetation))
 							{
 								color = Color.Lerp(color, Color.Green, state.Canopy[index]);
 							}
 						}
 
-						if (ShowLayers.HasFlag(Layers.TemperatureSubtle))
+						if (showLayers.HasFlag(Layers.TemperatureSubtle))
 						{
 							float temperature = state.Temperature[index];
 							if (temperature > 0)
@@ -133,7 +110,7 @@ namespace Seed
 
 						spriteBatch.Draw(whiteTex, rect, color);
 
-						if (ShowLayers.HasFlag(Layers.Water))
+						if (showLayers.HasFlag(Layers.Water))
 						{
 							float sw = state.SurfaceWater[index];
 							if (sw > 0)
@@ -144,22 +121,22 @@ namespace Seed
 							}
 						}
 
-						if (ShowLayers.HasFlag(Layers.Temperature))
+						if (showLayers.HasFlag(Layers.Temperature))
 						{
 							color = Color.Lerp(Color.LightBlue, Color.Red, Math.Min(1.0f, (state.Temperature[index] - MinTemperature) / (MaxTemperature - MinTemperature)));
 							spriteBatch.Draw(whiteTex, rect, color);
 						}
-						else if (ShowLayers.HasFlag(Layers.GroundWater))
+						else if (showLayers.HasFlag(Layers.GroundWater))
 						{
 							color = Color.Lerp(Color.DarkBlue, Color.Gray, Math.Min(1.0f, state.GroundWater[index] / MaxGroundWater));
 							spriteBatch.Draw(whiteTex, rect, color);
 						}
-						else if (ShowLayers.HasFlag(Layers.WaterTableDepth))
+						else if (showLayers.HasFlag(Layers.WaterTableDepth))
 						{
 							color = Color.Lerp(Color.Black, Color.White, (state.WaterTableDepth[index] - MinWaterTableDepth) / (MaxWaterTableDepth - MinWaterTableDepth));
 							spriteBatch.Draw(whiteTex, rect, color);
 						}
-						else if (ShowLayers.HasFlag(Layers.Elevation))
+						else if (showLayers.HasFlag(Layers.Elevation))
 						{
 							if (elevation < state.SeaLevel)
 							{
@@ -172,7 +149,7 @@ namespace Seed
 							color.A = 255;
 							spriteBatch.Draw(whiteTex, rect, color);
 						}
-						else if (ShowLayers.HasFlag(Layers.Wind))
+						else if (showLayers.HasFlag(Layers.Wind))
 						{
 							var wind = state.Wind[index];
 							float maxWindSpeed = 0.003f;
@@ -184,13 +161,13 @@ namespace Seed
 					}
 				}
 
-				for (int x = 0; x < Size; x++)
+				if (showLayers.HasFlag(Layers.Animals))
 				{
-					for (int y = 0; y < Size; y++)
+					for (int x = 0; x < Size; x++)
 					{
-
-						if (ShowLayers.HasFlag(Layers.Animals))
+						for (int y = 0; y < Size; y++)
 						{
+
 							for (int s = 0; s < MaxSpecies; s++)
 							{
 								int sIndex = GetSpeciesIndex(x, y, s);
@@ -203,7 +180,7 @@ namespace Seed
 									{
 										int screenX = rect.X + i * 2;
 										int size = i == p - 1 ? 1 : 3;
-										spriteBatch.Draw(whiteTex, new Rectangle(screenX, rect.Y + (int)(tileSize * (Math.Cos(screenX + rect.Y + (float)gameTime.TotalGameTime.Ticks/TimeSpan.TicksPerSecond) / 2 + 0.5f)), size, size), state.Species[s].Color);
+										spriteBatch.Draw(whiteTex, new Rectangle(screenX, rect.Y + (int)(tileSize * (Math.Cos(screenX + rect.Y + (float)gameTime.TotalGameTime.Ticks/TimeSpan.TicksPerSecond * Math.Sqrt(TimeScale)) / 2 + 0.5f)), size, size), state.Species[s].Color);
 									}
 								}
 							}
@@ -211,17 +188,17 @@ namespace Seed
 					}
 				}
 
-				if (ShowLayers.HasFlag(Layers.CloudHeight) || ShowLayers.HasFlag(Layers.CloudCoverage)) {
+				if (showLayers.HasFlag(Layers.CloudHeight) || showLayers.HasFlag(Layers.CloudCoverage)) {
 					for (int x = 0; x < Size; x++)
 					{
 						for (int y = 0; y < Size; y++)
 						{
 							int index = GetIndex(x, y);
-							if (ShowLayers.HasFlag(Layers.CloudHeight))
+							if (showLayers.HasFlag(Layers.CloudHeight))
 							{
 								//					spriteBatch.Draw(whiteTex, rect, Color.Lerp(Color.Black, Color.White, CloudElevation[index] / MaxCloudElevation) * CloudCover[index]);
 							}
-							else if (ShowLayers.HasFlag(Layers.CloudCoverage))
+							else if (showLayers.HasFlag(Layers.CloudCoverage))
 							{
 								float minCloudsToDraw = 0.05f;
 								float maxCloudsToDraw = 3.0f;
@@ -240,75 +217,6 @@ namespace Seed
 					}
 				}
 
-				spriteBatch.Draw(whiteTex, new Rectangle(0, 0, 150, 15 * LayerDisplayKeys.Count + 20), null, Color.Black * 0.5f);
-				int textY = 5;
-
-				spriteBatch.DrawString(font, "[ x" + ((int)TimeScale) + " ]", new Vector2(5, textY), Color.White);
-				textY += 20;
-
-				foreach (var k in LayerDisplayKeys)
-				{
-					spriteBatch.DrawString(font, "[" + (ShowLayers.HasFlag(k.Item1) ? "X" : " ") + "] - " + k.Item2 + " - " + k.Item1.ToString(), new Vector2(5, textY), Color.White);
-					textY += 15;
-				}
-
-				textY += 15;
-				for (int s = 0; s < MaxSpecies; s++)
-				{
-					if (state.SpeciesStats[s].Population > 0)
-					{
-						var species = state.Species[s];
-						spriteBatch.Draw(whiteTex, new Rectangle(5, textY, 10, 10), null, species.Color);
-						spriteBatch.DrawString(font, species.Name + " [" + species.Food.ToString().Substring(0, 1) + "] " + ((float)state.SpeciesStats[s].Population / 1000000).ToString("0.00"), new Vector2(20, textY), Color.White);
-						textY += 15;
-					}
-				}
-				textY += 15;
-
-				if (TileInfoActive)
-				{
-					int index = GetIndex(TileInfoPoint.X, TileInfoPoint.Y);
-
-					//public float[] Temperature;
-					//public float[] CloudCover;
-					//public float[] CloudElevation;
-					//public float[] WaterTableDepth;
-					//public float[] GroundWater;
-					//public float[] SurfaceWater;
-					//public float[] WaterSalinity;
-					//public float[] SurfaceIce;
-					//public float[] SubmergedIce;
-					//public float[] SoilFertility;
-					//public float[] Canopy;
-					//public float[] Population;
-					//public Vector2[] Wind;
-					//public Vector2[] Gradient;
-
-					spriteBatch.DrawString(font, "Elevation: " + (int)(state.Elevation[index] * 1000), new Vector2(5, textY += 15), Color.White);
-					spriteBatch.DrawString(font, "Temperature: " + (int)(state.Temperature[index]), new Vector2(5, textY += 15), Color.White);
-					spriteBatch.DrawString(font, "CloudCover: " + (int)(state.CloudCover[index] * 100), new Vector2(5, textY += 15), Color.White);
-					spriteBatch.DrawString(font, "WaterTableDepth: " + state.WaterTableDepth[index].ToString("0.00"), new Vector2(5, textY += 15), Color.White);
-					spriteBatch.DrawString(font, "GroundWater: " + state.GroundWater[index].ToString("0.00"), new Vector2(5, textY += 15), Color.White);
-					spriteBatch.DrawString(font, "SurfaceWater: " + state.SurfaceWater[index].ToString("0.00"), new Vector2(5, textY += 15), Color.White);
-					spriteBatch.DrawString(font, "SoilFertility: " + (int)(state.SoilFertility[index] * 100), new Vector2(5, textY += 15), Color.White);
-					spriteBatch.DrawString(font, "Canopy: " + (int)(state.Canopy[index] * 100), new Vector2(5, textY += 15), Color.White);
-					//	spriteBatch.DrawString(font, "Wind: " + Wind[index], new Vector2(5, textY += 15), Color.White);
-					for (int s = 0; s < MaxSpecies; s++)
-					{
-						int speciesIndex = GetSpeciesIndex(TileInfoPoint.X, TileInfoPoint.Y, s);
-						if (state.Population[speciesIndex] > 0) {
-							spriteBatch.Draw(whiteTex, new Rectangle(5, textY += 15, 10, 10), null, state.Species[s].Color);
-							float population = state.Population[speciesIndex];
-							spriteBatch.DrawString(font,
-								state.Species[s].Name + ": " + ((int)population) +
-								" +" + speciesGrowthRate.ToString("0.000") +
-								" Starvation: " + GetStarvation(GetPopulationDensity(population), state.Canopy[index]).ToString("0.000") +
-								" Dehydration: " + GetDehydration(GetPopulationDensity(population), GetFreshWaterAvailability(state.SurfaceWater[index], GetGroundWaterSaturation(state.GroundWater[index], state.WaterTableDepth[index]))).ToString("0.000") +
-								" TemperatureDeath: " + GetTemperatureDeath(ref state, state.Temperature[index], s).ToString("0.000"),
-								new Vector2(25, textY), Color.White);
-						}
-					}
-				}
 
 				spriteBatch.End();
 			}

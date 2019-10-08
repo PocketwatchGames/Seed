@@ -62,12 +62,12 @@ namespace Seed
 					float latitude = GetLatitude(y);
 					state.Temperature[index] = (1.0f - MathHelper.Clamp(e - state.SeaLevel, 0, MaxElevation) / (MaxElevation - state.SeaLevel)) * (1.0f - latitude * latitude) * (MaxTemperature - MinTemperature) + MinTemperature;
 					state.CloudCover[index] = GetPerlinNormalized(noise, x, y, 3.0f, 2000);
+					state.WaterTableDepth[index] = GetPerlinMinMax(noise, x, y, 1.0f, 200, MinWaterTableDepth, MaxWaterTableDepth);
+					state.SoilFertility[index] = GetPerlinNormalized(noise, x, y, 1.0f, 400);
 					if (e > 0)
 					{
 						state.SurfaceWater[index] = GetPerlinNormalized(noise, x, y, 1.0f, 100);
-						state.WaterTableDepth[index] = GetPerlinMinMax(noise, x, y, 1.0f, 200, MinWaterTableDepth, MaxWaterTableDepth);
 						state.GroundWater[index] = GetPerlinNormalized(noise, x, y, 1.0f, 300);
-						state.SoilFertility[index] = GetPerlinNormalized(noise, x, y, 1.0f, 400);
 						state.Canopy[index] = GetPerlinNormalized(noise, x, y, 2.0f, 1000);
 
 						for (int s = 0; s < numSpecies; s++)
@@ -83,28 +83,7 @@ namespace Seed
 			{
 				for (int y = 0; y < Size; y++)
 				{
-					int index = GetIndex(x, y);
-					float e = state.Elevation[index];
-					float west = state.Elevation[GetIndex(WrapX(x - 1), y)];
-					float east = state.Elevation[GetIndex(WrapX(x + 1), y)];
-					float north = state.Elevation[GetIndex(x, WrapY(y - 1))];
-					float south = state.Elevation[GetIndex(x, WrapY(y + 1))];
-					if (west < e && west < east && west < north && west < south)
-					{
-						state.Gradient[index] = new Vector2(west - e, 0);
-					}
-					else if (east < e && east < west && east < north && east < south)
-					{
-						state.Gradient[index] = new Vector2(e - east, 0);
-					}
-					else if (north < e && north < west && north < east && north < south)
-					{
-						state.Gradient[index] = new Vector2(0, north - e);
-					}
-					else if (south < e && south < west && south < north && south < east)
-					{
-						state.Gradient[index] = new Vector2(0, e - south);
-					}
+					UpdateGradient(x, y, state);
 				}
 			}
 
