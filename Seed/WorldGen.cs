@@ -32,19 +32,19 @@ namespace Seed
 			int numSpecies = 3;
 			state.Species[0].Name = "Hot Herb";
 			state.Species[0].Food = SpeciesType.FoodType.Herbivore;
-			state.Species[0].RestingTemperature = 50;
+			state.Species[0].RestingTemperature = FreezingTemperature + 50;
 			state.Species[0].TemperatureRange = 5000;
 			state.Species[0].Color = new Color(100, 60, 20);
 
 			state.Species[1].Name = "Basic Beast";
 			state.Species[1].Food = SpeciesType.FoodType.Herbivore;
-			state.Species[1].RestingTemperature = 35;
+			state.Species[1].RestingTemperature = FreezingTemperature + 35;
 			state.Species[1].TemperatureRange = 3000;
 			state.Species[1].Color = new Color(120, 100, 20);
 
 			state.Species[2].Name = "Supacold";
 			state.Species[2].Food = SpeciesType.FoodType.Herbivore;
-			state.Species[2].RestingTemperature = 20;
+			state.Species[2].RestingTemperature = FreezingTemperature + 20;
 			state.Species[2].TemperatureRange = 3000;
 			state.Species[2].Color = new Color(60, 20, 100);
 
@@ -62,12 +62,14 @@ namespace Seed
 					float latitude = GetLatitude(y);
 					state.Temperature[index] = (1.0f - MathHelper.Clamp(e - state.SeaLevel, 0, MaxElevation) / (MaxElevation - state.SeaLevel)) * (1.0f - latitude * latitude) * (MaxTemperature - MinTemperature) + MinTemperature;
 					state.CloudCover[index] = GetPerlinNormalized(noise, x, y, 3.0f, 2000);
+					state.CloudElevation[index] = state.Elevation[index] + 1000;
 					state.WaterTableDepth[index] = GetPerlinMinMax(noise, x, y, 1.0f, 200, MinWaterTableDepth, MaxWaterTableDepth);
 					state.SoilFertility[index] = GetPerlinNormalized(noise, x, y, 1.0f, 400);
+					state.Pressure[index] = GetPressureAtElevation(state, index, Math.Max(state.SeaLevel, e), 0);
 					if (e > 0)
 					{
-						state.SurfaceWater[index] = GetPerlinNormalized(noise, x, y, 1.0f, 100);
-						state.GroundWater[index] = GetPerlinNormalized(noise, x, y, 1.0f, 300);
+						state.SurfaceWater[index] = GetPerlinMinMax(noise, x, y, 1.0f, 100, 0, 2.0f);
+						state.GroundWater[index] = GetPerlinMinMax(noise, x, y, 1.0f, 300, 0, state.WaterTableDepth[index] * state.SoilFertility[index] * MaxSoilPorousness);
 						state.Canopy[index] = GetPerlinNormalized(noise, x, y, 2.0f, 1000);
 
 						for (int s = 0; s < numSpecies; s++)
@@ -77,13 +79,6 @@ namespace Seed
 						}
 
 					}
-				}
-			}
-			for (int x = 0; x < Size; x++)
-			{
-				for (int y = 0; y < Size; y++)
-				{
-					UpdateGradient(x, y, state);
 				}
 			}
 

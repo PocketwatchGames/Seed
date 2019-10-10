@@ -35,10 +35,13 @@ namespace Seed
 			int index = gui.World.GetIndex(gui.TileInfoPoint.X, gui.TileInfoPoint.Y);
 			int textY = 300;
 
-			spriteBatch.DrawString(gui.Font, "Elevation: " + (int)(state.Elevation[index] * 1000), new Vector2(5, textY += 15), Color.White);
-			spriteBatch.DrawString(gui.Font, "Temperature: " + (int)(state.Temperature[index]), new Vector2(5, textY += 15), Color.White);
-			spriteBatch.DrawString(gui.Font, "CloudCover: " + (int)(state.CloudCover[index] * 100), new Vector2(5, textY += 15), Color.White);
-			spriteBatch.DrawString(gui.Font, "WaterTableDepth: " + state.WaterTableDepth[index].ToString("0.00"), new Vector2(5, textY += 15), Color.White);
+			spriteBatch.DrawString(gui.Font, "Elevation: " + (int)(state.Elevation[index]), new Vector2(5, textY += 15), Color.White);
+			spriteBatch.DrawString(gui.Font, "Temperature: " + (int)(state.Temperature[index] - World.FreezingTemperature), new Vector2(5, textY += 15), Color.White);
+			spriteBatch.DrawString(gui.Font, "Pressure: " + (state.Pressure[index] / World.StaticPressure).ToString("0.00"), new Vector2(5, textY += 15), Color.White);
+			spriteBatch.DrawString(gui.Font, "CloudCover: " + state.CloudCover[index].ToString("0.00"), new Vector2(5, textY += 15), Color.White);
+			spriteBatch.DrawString(gui.Font, "Rainfall: " + (state.Rainfall[index] * World.TicksPerYear).ToString("0.00"), new Vector2(5, textY += 15), Color.White);
+			spriteBatch.DrawString(gui.Font, "Evaporation: " + (state.Evaporation[index] * World.TicksPerYear).ToString("0.00"), new Vector2(5, textY += 15), Color.White);
+			spriteBatch.DrawString(gui.Font, "WaterTableDepth: " + (int)state.WaterTableDepth[index], new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "GroundWater: " + state.GroundWater[index].ToString("0.00"), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "SurfaceWater: " + state.SurfaceWater[index].ToString("0.00"), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "SoilFertility: " + (int)(state.SoilFertility[index] * 100), new Vector2(5, textY += 15), Color.White);
@@ -55,7 +58,7 @@ namespace Seed
 						state.Species[s].Name + ": " + ((int)population) +
 						" +" + gui.World.speciesGrowthRate.ToString("0.000") +
 						" Starvation: " + gui.World.GetStarvation(gui.World.GetPopulationDensity(population), state.Canopy[index]).ToString("0.000") +
-						" Dehydration: " + gui.World.GetDehydration(gui.World.GetPopulationDensity(population), gui.World.GetFreshWaterAvailability(state.SurfaceWater[index], gui.World.GetGroundWaterSaturation(state.GroundWater[index], state.WaterTableDepth[index]))).ToString("0.000") +
+						" Dehydration: " + gui.World.GetDehydration(gui.World.GetPopulationDensity(population), gui.World.GetFreshWaterAvailability(state.SurfaceWater[index], gui.World.GetGroundWaterSaturation(state.GroundWater[index], state.WaterTableDepth[index], state.SoilFertility[index]))).ToString("0.000") +
 						" TemperatureDeath: " + gui.World.GetTemperatureDeath(ref state, state.Temperature[index], s).ToString("0.000"),
 						new Vector2(25, textY), Color.White);
 				}
@@ -93,7 +96,7 @@ namespace Seed
 						{
 							continue;
 						}
-						Rectangle rect = new Rectangle(x * gui.World.tileSize, y * gui.World.tileSize, gui.World.tileSize, gui.World.tileSize);
+						Rectangle rect = new Rectangle(x * gui.World.tileRenderSize, y * gui.World.tileRenderSize, gui.World.tileRenderSize, gui.World.tileRenderSize);
 						spriteBatch.Draw(gui.whiteTex, rect, Color.White * 0.2f);
 					}
 				}
@@ -104,7 +107,7 @@ namespace Seed
 		{
 			int index = gui.World.GetIndex(gui.TileInfoPoint.X, gui.TileInfoPoint.Y);
 			int textY = 300;
-			spriteBatch.DrawString(gui.Font, "Elevation: " + (int)(state.Elevation[index] * 1000), new Vector2(5, textY += 15), Color.White);
+			spriteBatch.DrawString(gui.Font, "Elevation: " + (int)(state.Elevation[index]), new Vector2(5, textY += 15), Color.White);
 		}
 		override public void Update(GameTime gameTime, Point p, WorldGUI gui)
 		{
@@ -131,21 +134,6 @@ namespace Seed
 								int index = gui.World.GetIndex(x, y);
 								state.Elevation[index] += distT * DeltaPerSecond * dt;
 							}
-						}
-					}
-
-					for (int i = (int)-Math.Ceiling(BrushSize)-1; i < Math.Ceiling(BrushSize)+1; i++)
-					{
-						for (int j = (int)-Math.Ceiling(BrushSize)-1; j < Math.Ceiling(BrushSize) + 1; j++)
-						{
-							int x = gui.World.WrapX(p.X + i);
-							int y = p.Y + j;
-							if (y < 0 || y >= gui.World.Size)
-							{
-								continue;
-							}
-
-							gui.World.UpdateGradient(x, y, state);
 						}
 					}
 

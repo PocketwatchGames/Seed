@@ -32,7 +32,9 @@ namespace Seed
 		public const int TicksPerYear = 360;
 		public const int MaxSpecies = 4;
 
-		public float canopyGrowthRate = 2.0f / TicksPerYear;
+		public const float tileSize = 400000;
+
+		public float canopyGrowthRate = 100.0f / TicksPerYear;
 		public float canopyDeathRate = 0.2f / TicksPerYear;
 		public float speciesGrowthRate = 1.0f / TicksPerYear;
 		public float speciesDeathRate = 0.025f / TicksPerYear;
@@ -43,19 +45,60 @@ namespace Seed
 		public float minPopulationDensityForExpansion = 0.1f;
 		public float starvationSpeed = 12.0f / TicksPerYear;
 		public float dehydrationSpeed = 12.0f / TicksPerYear;
+		public float carbonDioxide = 0.001f;
 
-		const float MaxElevation = 10.0f;
-		const float MinElevation = -10.0f;
-		const float MinTemperature = -50;
-		const float MaxTemperature = 50;
-		const float EvapRate =  0.0001f / TicksPerYear;
-		const float tradeWindSpeed = 1.0f / TicksPerYear;
-		const float RainfallRate = 1.0f / TicksPerYear;
-		const float FlowSpeed = 10.0f / TicksPerYear;
-		const float MaxWaterTableDepth = 2.0f;
-		const float MinWaterTableDepth = 0.2f;
-		const float MaxGroundWater = MaxWaterTableDepth;
-//		float MaxCloudElevation = ;
+		public const float MaxElevation = 10000.0f;
+		public const float MinElevation = -10000.0f;
+		public const float EvapRateWind = 2.0f / TicksPerYear;
+		public const float EvapRateTemperature = 5.0f / TicksPerYear;
+		public const float tradeWindSpeed = 10.0f / TicksPerYear;
+		public const float pressureDifferentialWindSpeed = 0.0005f / TicksPerYear;
+		public const float RainfallRate = 10.0f / TicksPerYear;
+		public const float FlowSpeed = 0.01f / TicksPerYear;
+		public const float MaxWaterTableDepth = 100.0f;
+		public const float MinWaterTableDepth = 10.0f;
+		public const float MaxSoilPorousness = 0.1f;
+		public const float SoilOsmosisSpeed = 10.0f / TicksPerYear;
+		public const float FreezingTemperature = 273.15f;
+		public const float MinTemperature = FreezingTemperature - 50;
+		public const float MaxTemperature = FreezingTemperature + 50;
+		public float planetTiltAngle = MathHelper.ToRadians(-23.5f);
+		public const float evapMinTemperature = 253; // -20 celsius
+		public const float evapMaxTemperature = 373; // 140 celsius
+		public const float evapTemperatureRange = evapMaxTemperature - evapMinTemperature;
+
+		#region temperature
+		public float heatLoss = 0.0002f; // how fast a cell loses heat an min elevation, no cloud cover
+		public float heatGainFromSun = 25.0f / TicksPerYear; // how fast a cell gains heat with no cloud cover, modified by sun height
+		public float heatReflectionWater = 0.0f; // How much heat is reflected back by the water
+		public float heatReflectionIce = 0.5f; // How much heat is reflected back by the water
+		public float HeatReflectionLand = 0.05f;
+		public float heatLossPreventionCarbonDioxide = 200;
+		public float cloudContentFullAbsorption = 5.0f; // how much heat gain/loss is caused by cloud cover
+		public float cloudAbsorptionRate = 0.06f; // 6% absorbed by clouds
+		public float cloudReflectionRate = 0.20f; // 20% reflected back to space
+		public float troposphereElevation = 10000;
+		public float stratosphereElevation = 50000;
+		public float troposphereAtmosphereContent = 0.8f;
+		public float dewPointZero = 213.0f;
+		public float dewPointTemperatureRange = 100.0f;
+		public float dewPointRange = 6.0f;
+		public float rainPointTemperatureMultiplier = 0.00075f; // adjustment for temperature
+		public float temperatureLapseRate = -0.0065f;
+		public float EvaporativeCoolingRate = 1.0f;
+		public float temperatureLossFromWind = 2.0f / TicksPerYear;
+		public float windInertia = 0.1f;
+		public const float StaticPressure = 101325;
+		public const float StdTemp = 288.15f;
+		public const float StdTempLapseRate = -0.0065f;
+		public const float GravitationalAcceleration = 9.80665f;
+		public const float MolarMassEarthAir = 0.0289644f;
+		public const float UniversalGasConstant = 8.3144598f;
+
+
+		#endregion
+
+		//		float MaxCloudElevation = ;
 
 		public int Size;
 		public float TimeTillTick = 0.00001f;
@@ -82,6 +125,8 @@ namespace Seed
 
 			public float[] Elevation;
 			public float[] Temperature;
+			public float[] Rainfall;
+			public float[] Evaporation;
 			public float[] CloudCover;
 			public float[] CloudElevation;
 			public float[] WaterTableDepth;
@@ -93,8 +138,10 @@ namespace Seed
 			public float[] SoilFertility;
 			public float[] Canopy;
 			public float[] Population;
-			public Vector2[] Wind;
+			public float[] Pressure;
+			public Vector3[] Wind;
 			public Vector2[] Gradient;
+			public Vector3[] Normal;
 
 			public object Clone()
 			{
@@ -111,18 +158,23 @@ namespace Seed
 			{
 				States[i] = new State();
 				States[i].Elevation = new float[s];
+				States[i].CloudElevation = new float[s];
 				States[i].Temperature = new float[s];
 				States[i].CloudCover = new float[s];
 				States[i].WaterTableDepth = new float[s];
 				States[i].GroundWater = new float[s];
 				States[i].SurfaceWater = new float[s];
+				States[i].Rainfall = new float[s];
+				States[i].Evaporation = new float[s];
 				States[i].WaterSalinity = new float[s];
 				States[i].SurfaceIce = new float[s];
 				States[i].SubmergedIce = new float[s];
 				States[i].SoilFertility = new float[s];
 				States[i].Canopy = new float[s];
-				States[i].Wind = new Vector2[s];
+				States[i].Wind = new Vector3[s];
+				States[i].Pressure = new float[s];
 				States[i].Gradient = new Vector2[s];
+				States[i].Normal = new Vector3[s];
 
 				States[i].Population = new float[s * MaxSpecies];
 				States[i].Species = new SpeciesType[MaxSpecies];
@@ -140,29 +192,36 @@ namespace Seed
 				_simTask.Wait();
 			}
 
-			_simTask = Task.Run(() =>
-			{
+		//	_simTask = Task.Run(() =>
+		//	{
 				lock (InputLock)
 				{
 					while (TimeTillTick <= 0)
 					{
 						TimeTillTick += TicksPerSecond;
-						int nextStateIndex = CurStateIndex;
+						int nextStateIndex = (CurStateIndex+1) % StateCount;
 						while (nextStateIndex == LastRenderStateIndex || nextStateIndex == NextRenderStateIndex)
 						{
 							nextStateIndex = (nextStateIndex + 1) % StateCount;
 						}
 
 						Tick(States[CurStateIndex], States[nextStateIndex]);
+						// TODO: why can't i edit this in the tick call?  it's a class, so it should be pass by reference?
+						States[nextStateIndex].Ticks++;
 						CurStateIndex = nextStateIndex;
 					}
 				}
 				lock (DrawLock)
 				{
+					if (States[CurStateIndex].Ticks < States[NextRenderStateIndex].Ticks)
+					{
+						TimeTillTick = 0;
+					}
+
 					LastRenderStateIndex = NextRenderStateIndex;
 					NextRenderStateIndex = CurStateIndex;
 				}
-			});
+			//});
 		}
 
 		public int GetIndex(int x, int y)
@@ -190,30 +249,19 @@ namespace Seed
 			return ((float)y / Size) * 2 - 1.0f;
 		}
 
-		public void UpdateGradient(int x, int y, State state)
+		Vector3 GetSunAngle(ref State state, float latitude)
 		{
-			int index = GetIndex(x, y);
-			float e = state.Elevation[index];
-			float west = state.Elevation[GetIndex(WrapX(x - 1), y)];
-			float east = state.Elevation[GetIndex(WrapX(x + 1), y)];
-			float north = state.Elevation[GetIndex(x, WrapY(y - 1))];
-			float south = state.Elevation[GetIndex(x, WrapY(y + 1))];
-			if (west < e && west < east && west < north && west < south)
-			{
-				state.Gradient[index] = new Vector2(west - e, 0);
-			}
-			else if (east < e && east < west && east < north && east < south)
-			{
-				state.Gradient[index] = new Vector2(e - east, 0);
-			}
-			else if (north < e && north < west && north < east && north < south)
-			{
-				state.Gradient[index] = new Vector2(0, north - e);
-			}
-			else if (south < e && south < west && south < north && south < east)
-			{
-				state.Gradient[index] = new Vector2(0, e - south);
-			}
+
+			float angleOfInclination = planetTiltAngle * (float)Math.Sin(Math.PI * 2 * (GetTimeOfYear(ref state) - 0.25f));
+			//float timeOfDay = (-sunPhase + 0.5f) * Math.PI * 2;
+			float timeOfDay = (float)0;
+			float azimuth = (float)Math.Atan2(Math.Sin(timeOfDay), Math.Cos(timeOfDay) * Math.Sin(latitude * Math.PI) - Math.Tan(angleOfInclination) * Math.Cos(latitude * Math.PI));
+			float elevation = (float)Math.Asin((Math.Sin(latitude) * Math.Sin(angleOfInclination) + Math.Cos(latitude) * Math.Cos(angleOfInclination) * Math.Cos(timeOfDay)));
+
+			float cosOfElevation = (float)Math.Cos(elevation);
+			Vector3 sunVec = new Vector3((float)Math.Sin(azimuth) * cosOfElevation, (float)Math.Cos(azimuth) * cosOfElevation, (float)Math.Sin(elevation));
+			return sunVec;
 		}
+
 	}
 }

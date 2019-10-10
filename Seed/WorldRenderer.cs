@@ -34,7 +34,7 @@ namespace Seed
 		}
 
 
-		public int tileSize = 10;
+		public int tileRenderSize = 10;
 
 
 		public void Draw(GameTime gameTime, SpriteBatch spriteBatch, Layers showLayers, Texture2D whiteTex)
@@ -49,7 +49,7 @@ namespace Seed
 					for (int y = 0; y < Size; y++)
 					{
 						int index = GetIndex(x, y);
-						Rectangle rect = new Rectangle(x * tileSize, y * tileSize, tileSize, tileSize);
+						Rectangle rect = new Rectangle(x * tileRenderSize, y * tileRenderSize, tileRenderSize, tileRenderSize);
 
 						Color color = Color.White;
 						float elevation = state.Elevation[index];
@@ -90,20 +90,20 @@ namespace Seed
 
 							if (showLayers.HasFlag(Layers.Vegetation))
 							{
-								color = Color.Lerp(color, Color.Green, state.Canopy[index]);
+								color = Color.Lerp(color, Color.Green, (float)Math.Sqrt(MathHelper.Clamp(state.Canopy[index], 0.01f, 1.0f)));
 							}
 						}
 
 						if (showLayers.HasFlag(Layers.TemperatureSubtle))
 						{
 							float temperature = state.Temperature[index];
-							if (temperature > 0)
+							if (temperature > FreezingTemperature)
 							{
-								color = Color.Lerp(color, Color.Red, Math.Min(1.0f, temperature / (2 * MaxTemperature)));
+								color = Color.Lerp(color, Color.Red, Math.Min(1.0f, (temperature - FreezingTemperature) / (10 * (MaxTemperature - FreezingTemperature))));
 							}
 							else
 							{
-								color = Color.Lerp(Color.LightBlue, color, Math.Max(0, 1.0f - temperature / (2 * MinTemperature)));
+								color = Color.Lerp(Color.LightBlue, color, Math.Max(0, 1.0f - (FreezingTemperature - temperature) / (10 * (FreezingTemperature - MinTemperature))));
 							}
 						}
 
@@ -115,8 +115,8 @@ namespace Seed
 							float sw = state.SurfaceWater[index];
 							if (sw > 0)
 							{
-								int width = (int)(Math.Min(1.0f, sw) * (tileSize - 2));
-								Rectangle surfaceWaterRect = new Rectangle(x * tileSize + 1, y * tileSize + 1, width, width);
+								int width = (int)(Math.Min(1.0f, sw) * (tileRenderSize - 2));
+								Rectangle surfaceWaterRect = new Rectangle(x * tileRenderSize + 1, y * tileRenderSize + 1, width, width);
 								spriteBatch.Draw(whiteTex, surfaceWaterRect, Color.Lerp(Color.Blue, Color.Teal, (elevation - state.SeaLevel) / (MaxElevation - state.SeaLevel)) * 0.75f);
 							}
 						}
@@ -128,7 +128,7 @@ namespace Seed
 						}
 						else if (showLayers.HasFlag(Layers.GroundWater))
 						{
-							color = Color.Lerp(Color.DarkBlue, Color.Gray, Math.Min(1.0f, state.GroundWater[index] / MaxGroundWater));
+							color = Color.Lerp(Color.DarkBlue, Color.Gray, Math.Min(1.0f, state.GroundWater[index] / (MaxWaterTableDepth * MaxSoilPorousness)));
 							spriteBatch.Draw(whiteTex, rect, color);
 						}
 						else if (showLayers.HasFlag(Layers.WaterTableDepth))
@@ -149,14 +149,12 @@ namespace Seed
 							color.A = 255;
 							spriteBatch.Draw(whiteTex, rect, color);
 						}
-						else if (showLayers.HasFlag(Layers.Wind))
+						if (showLayers.HasFlag(Layers.Wind))
 						{
 							var wind = state.Wind[index];
-							float maxWindSpeed = 0.003f;
-							color.R = (byte)(255 * (float)MathHelper.Clamp((wind.X + maxWindSpeed) / (2 * maxWindSpeed), 0.0f, 1.0f));
-							color.G = (byte)(255 * (float)MathHelper.Clamp((wind.Y + maxWindSpeed) / (2 * maxWindSpeed), 0.0f, 1.0f));
-							color.B = 0;
-							spriteBatch.Draw(whiteTex, rect, color);
+							float maxWindSpeed = 0.03f;
+							spriteBatch.Draw(whiteTex, new Rectangle(rect.X + tileRenderSize / 2 - 1, rect.Y + tileRenderSize / 2 - 1, 3, 3), null, Color.White * 0.5f);
+							spriteBatch.Draw(whiteTex, new Rectangle(rect.X + tileRenderSize / 2, rect.Y + tileRenderSize / 2, (int)(tileRenderSize * wind.Length() / maxWindSpeed), 1), null, Color.White, (float)Math.Atan2(wind.Y, wind.X), new Vector2(0, 0.5f), SpriteEffects.None, 0);
 						}
 					}
 				}
@@ -174,13 +172,13 @@ namespace Seed
 								float pop = state.Population[sIndex];
 								if (pop > 0)
 								{
-									Rectangle rect = new Rectangle(x * tileSize, y * tileSize, tileSize, tileSize);
-									int p = MathHelper.Clamp((int)Math.Ceiling(tileSize * (float)pop / speciesMaxPopulation), 0, tileSize);
+									Rectangle rect = new Rectangle(x * tileRenderSize, y * tileRenderSize, tileRenderSize, tileRenderSize);
+									int p = MathHelper.Clamp((int)Math.Ceiling(tileRenderSize * (float)pop / speciesMaxPopulation), 0, tileRenderSize);
 									for (int i = 0; i < p; i++)
 									{
 										int screenX = rect.X + i * 2;
 										int size = i == p - 1 ? 1 : 3;
-										spriteBatch.Draw(whiteTex, new Rectangle(screenX, rect.Y + (int)(tileSize * (Math.Cos(screenX + rect.Y + (float)gameTime.TotalGameTime.Ticks/TimeSpan.TicksPerSecond * Math.Sqrt(TimeScale)) / 2 + 0.5f)), size, size), state.Species[s].Color);
+										spriteBatch.Draw(whiteTex, new Rectangle(screenX, rect.Y + (int)(tileRenderSize * (Math.Cos(screenX + rect.Y + (float)gameTime.TotalGameTime.Ticks/TimeSpan.TicksPerSecond * Math.Sqrt(TimeScale)) / 2 + 0.5f)), size, size), state.Species[s].Color);
 									}
 								}
 							}
@@ -200,16 +198,15 @@ namespace Seed
 							}
 							else if (showLayers.HasFlag(Layers.CloudCoverage))
 							{
-								float minCloudsToDraw = 0.05f;
-								float maxCloudsToDraw = 3.0f;
-								float maxCloudAlpha = 0.5f;
+								float minCloudsToDraw = 0.01f;
+								float maxCloudsToDraw = 1.0f;
 								float cloudCover = (float)MathHelper.Clamp(state.CloudCover[index] - minCloudsToDraw, 0.0f, maxCloudsToDraw);
 								if (cloudCover > 0)
 								{
-									Rectangle rect = new Rectangle(x * tileSize, y * tileSize, tileSize, tileSize);
-									int width = (int)(cloudCover * tileSize);
 									float normalizedCloudCover = cloudCover / maxCloudsToDraw;
-									spriteBatch.Draw(whiteTex, rect, Color.Lerp(Color.White, Color.DarkGray, normalizedCloudCover * normalizedCloudCover) * normalizedCloudCover * maxCloudAlpha);
+									int width = (int)(normalizedCloudCover * tileRenderSize);
+									Rectangle rect = new Rectangle(x * tileRenderSize, y * tileRenderSize, width, width);
+									spriteBatch.Draw(whiteTex, rect, Color.Lerp(Color.White, Color.Black, normalizedCloudCover));
 								}
 							}
 

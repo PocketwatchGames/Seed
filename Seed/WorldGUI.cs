@@ -17,7 +17,7 @@ namespace Seed
 		List<float> _timeScales = new List<float> { 0, 5, 20, 100 };
 		int _timeScaleIndex = 0;
 
-		public World.Layers ShowLayers = World.Layers.ElevationSubtle | World.Layers.Water | World.Layers.SoilFertility | World.Layers.Vegetation | World.Layers.Animals;
+		public World.Layers ShowLayers = World.Layers.ElevationSubtle | World.Layers.TemperatureSubtle | World.Layers.Water | World.Layers.SoilFertility | World.Layers.Vegetation | World.Layers.Animals;
 		public List<Tuple<World.Layers, Keys>> LayerDisplayKeys = new List<Tuple<World.Layers, Keys>>()
 		{
 			new Tuple<World.Layers, Keys>(World.Layers.Water, Keys.F1),
@@ -44,8 +44,8 @@ namespace Seed
 			world.TimeScale = _timeScales[_timeScaleIndex];
 
 			Tools.Add(new ToolSelect() { Name = "Info", HotKey = Keys.D1 });
-			Tools.Add(new ToolElevation() { Name = "Elevation Up", HotKey = Keys.D2, DeltaPerSecond = 1.0f });
-			Tools.Add(new ToolElevation() { Name = "Elevation Down", HotKey = Keys.D3, DeltaPerSecond = -1.0f });
+			Tools.Add(new ToolElevation() { Name = "Elevation Up", HotKey = Keys.D2, DeltaPerSecond = 1000.0f });
+			Tools.Add(new ToolElevation() { Name = "Elevation Down", HotKey = Keys.D3, DeltaPerSecond = -1000.0f });
 			SelectTool(0);
 		}
 
@@ -67,7 +67,7 @@ namespace Seed
 		{
 			var keyboardState = Keyboard.GetState();
 			var mouseState = Mouse.GetState();
-			TileInfoPoint = new Point(MathHelper.Clamp(mouseState.X / World.tileSize, 0, World.Size - 1), MathHelper.Clamp(mouseState.Y / World.tileSize, 0, World.Size - 1));
+			TileInfoPoint = new Point(MathHelper.Clamp(mouseState.X / World.tileRenderSize, 0, World.Size - 1), MathHelper.Clamp(mouseState.Y / World.tileRenderSize, 0, World.Size - 1));
 
 			foreach (var k in LayerDisplayKeys)
 			{
@@ -174,6 +174,9 @@ namespace Seed
 				spriteBatch.DrawString(Font, "[" + (ShowLayers.HasFlag(k.Item1) ? "X" : " ") + "] - " + k.Item2 + " - " + k.Item1.ToString(), new Vector2(5, textY), Color.White);
 				textY += 15;
 			}
+
+			spriteBatch.DrawString(Font, (int)(World.GetTimeOfYear(ref state)*12+1) + "/" + World.GetYear(ref state), new Vector2(5, textY), Color.White);
+			textY += 20;
 
 
 			textY += 15;
