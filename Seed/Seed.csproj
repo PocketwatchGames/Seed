@@ -54,6 +54,7 @@
     <Compile Include="GUI\WorldGUI.cs" />
     <Compile Include="World\WorldRenderer.cs" />
     <Compile Include="World\WorldSim.cs" />
+    <Compile Include="World\WorldSimAtmosphere.cs" />
     <Compile Include="World\WorldSimEarth.cs" />
     <Compile Include="World\WorldSimLife.cs" />
   </ItemGroup>

@@ -94,5 +94,34 @@ namespace Seed
 			}
 
 		}
+
+		public float GetGroundWaterSaturation(float groundWater, float waterTableDepth, float soilPorousness)
+		{
+			return groundWater / (waterTableDepth * soilPorousness);
+		}
+
+		public float GetFreshWaterAvailability(float surfaceWater, float groundWaterSaturation)
+		{
+			return surfaceWater > 0 ? 1.0f : Math.Min(1.0f, groundWaterSaturation);
+		}
+		public float GetPopulationDensity(float population)
+		{
+			return (float)population / speciesMaxPopulation;
+		}
+		public float GetStarvation(float populationDensity, float canopy)
+		{
+			return Math.Max(0, (populationDensity - canopy) * starvationSpeed);
+		}
+		public float GetTemperatureDeath(ref State state, float temperature, int species)
+		{
+			return Math.Abs((temperature - state.Species[species].RestingTemperature) / state.Species[species].TemperatureRange);
+		}
+		public float GetDehydration(float populationDensity, float freshWaterAvailability)
+		{
+			return Math.Max(0, (populationDensity - freshWaterAvailability / freshWaterMaxAvailability) * dehydrationSpeed);
+		}
+
+
+
 	}
 }

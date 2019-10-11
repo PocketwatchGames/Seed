@@ -74,7 +74,7 @@ namespace Seed
 			public float[] Population;
 			public float[] Pressure;
 			public Vector3[] Wind;
-			public Vector2[] Gradient;
+			public Vector2[] FlowDirection;
 			public Vector3[] Normal;
 
 			public object Clone()
@@ -108,7 +108,7 @@ namespace Seed
 				States[i].Canopy = new float[s];
 				States[i].Wind = new Vector3[s];
 				States[i].Pressure = new float[s];
-				States[i].Gradient = new Vector2[s];
+				States[i].FlowDirection = new Vector2[s];
 				States[i].Normal = new Vector3[s];
 
 				States[i].Population = new float[s * MaxSpecies];
@@ -151,6 +151,7 @@ namespace Seed
 						// TODO: why can't i edit this in the tick call?  it's a class, so it should be pass by reference?
 						States[nextStateIndex].Ticks++;
 						CurStateIndex = nextStateIndex;
+
 					}
 				}
 				lock (DrawLock)

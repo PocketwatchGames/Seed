@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Content;
+using Gears;
 
 namespace Seed
 {
@@ -36,6 +37,7 @@ namespace Seed
 
 		}
 
+		float stateLerpT = 0;
 		public int tileRenderSize = 10;
 		public void Draw(GameTime gameTime, SpriteBatch spriteBatch, Layers showLayers, Texture2D whiteTex)
 		{
@@ -43,6 +45,8 @@ namespace Seed
 				spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
 
 				ref var state = ref States[NextRenderStateIndex];
+				ref var lastState = ref States[LastRenderStateIndex];
+				stateLerpT = Math.Max(1.0f, (float)gameTime.ElapsedGameTime.Ticks / TimeSpan.TicksPerSecond * 10);
 
 				for (int x = 0; x < Size; x++)
 				{
@@ -73,7 +77,7 @@ namespace Seed
 						{
 							if (showLayers.HasFlag(Layers.SoilFertility))
 							{
-								color = Color.Lerp(Color.Gray, Color.Brown, state.SoilFertility[index]);
+								color = Color.Lerp(Color.Gray, Color.Brown, MathUtils.Lerp(lastState.SoilFertility[index], state.SoilFertility[index], stateLerpT));
 							}
 
 							if (showLayers.HasFlag(Layers.ElevationSubtle))
@@ -90,7 +94,7 @@ namespace Seed
 
 							if (showLayers.HasFlag(Layers.Vegetation))
 							{
-								color = Color.Lerp(color, Color.Green, (float)Math.Sqrt(MathHelper.Clamp(state.Canopy[index], 0.01f, 1.0f)));
+								color = Color.Lerp(color, Color.Green, (float)Math.Sqrt(MathHelper.Clamp(MathUtils.Lerp(lastState.Canopy[index], state.Canopy[index], stateLerpT), 0.01f, 1.0f)));
 							}
 						}
 
@@ -112,7 +116,7 @@ namespace Seed
 
 						if (showLayers.HasFlag(Layers.Water))
 						{
-							float sw = state.SurfaceWater[index];
+							float sw = MathUtils.Lerp(lastState.SurfaceWater[index], state.SurfaceWater[index], stateLerpT);
 							if (sw > 0)
 							{
 								int width = (int)(Math.Min(1.0f, sw) * (tileRenderSize - 2));

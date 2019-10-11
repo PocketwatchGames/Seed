@@ -113,5 +113,10 @@ namespace Gears {
 				(((uint)(((byte)(b >> 16) - (byte)(a >> 16)) * t) + (byte)(a >> 16)) << 16) +
 				(((uint)(((byte)(b >> 24) - (byte)(a >> 24)) * t) + (byte)(a >> 24)) << 24);
 		}
+
+		public static float Lerp(float a, float b, float t)
+		{
+			return (b - a) * t + a;
+		}
 	}
 }

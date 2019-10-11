@@ -19,8 +19,8 @@ namespace Seed
 		public Game1()
 		{
 			graphics = new GraphicsDeviceManager(this);
-			graphics.PreferredBackBufferWidth = 1280;
-			graphics.PreferredBackBufferHeight = 720;
+			graphics.PreferredBackBufferWidth = 1920;
+			graphics.PreferredBackBufferHeight = 1080;
 			Content.RootDirectory = "Content";
 		}
 
@@ -33,6 +33,7 @@ namespace Seed
 		protected override void Initialize()
 		{
 			IsMouseVisible = true;
+			IsFixedTimeStep = false;
 
 			// TODO: Add your initialization logic here
 			world = new World();
