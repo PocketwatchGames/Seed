@@ -179,6 +179,13 @@ namespace Seed
 			{
 				TickAnimals(state, nextState);
 			}));
+			simTasks.Add(Task.Run(() =>
+			{
+				for (int i = 0; i < ProbeCount; i++)
+				{
+					Probes[i].Update(this, state);
+				}
+			}));
 			Task.WaitAll(simTasks.ToArray());
 		}
 

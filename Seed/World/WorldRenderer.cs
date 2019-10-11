@@ -32,6 +32,7 @@ namespace Seed
 			Pressure = 1 << 15,
 			Humidity = 1 << 16,
 			Rainfall = 1 << 17,
+			Probes = 1 << 18,
 
 		}
 
@@ -246,6 +247,23 @@ namespace Seed
 					}
 				}
 
+				if (showLayers.HasFlag(Layers.Probes))
+				{
+					for (int i=0;i<ProbeCount;i++)
+					{
+						var probe = Probes[i];
+						spriteBatch.Draw(
+							whiteTex, 
+							new Vector2(probe.Position.X * tileRenderSize + tileRenderSize / 2, probe.Position.Y * tileRenderSize + tileRenderSize / 2), 
+							null, 
+							Color.Purple, 
+							(float)gameTime.TotalGameTime.Ticks / TimeSpan.TicksPerSecond,
+							new Vector2(0.5f, 0.5f), 
+							5, 
+							SpriteEffects.None, 
+							0);
+					}
+				}
 
 				spriteBatch.End();
 			}

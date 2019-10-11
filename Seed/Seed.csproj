@@ -35,21 +35,25 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>Icon.ico</ApplicationIcon>
+    <ApplicationIcon>Program\Icon.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationManifest>Program\app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Game1.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="Program\Game1.cs" />
+    <Compile Include="Program\Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Tool.cs" />
-    <Compile Include="World.cs" />
-    <Compile Include="WorldGen.cs" />
-    <Compile Include="WorldGUI.cs" />
-    <Compile Include="WorldRenderer.cs" />
-    <Compile Include="WorldSim.cs" />
+    <Compile Include="Tools\ToolElevation.cs" />
+    <Compile Include="Tools\ToolProbe.cs" />
+    <Compile Include="Tools\ToolSelect.cs" />
+    <Compile Include="World\WorldConstants.cs" />
+    <Compile Include="Tools\Tool.cs" />
+    <Compile Include="World\World.cs" />
+    <Compile Include="World\WorldGen.cs" />
+    <Compile Include="GUI\WorldGUI.cs" />
+    <Compile Include="World\WorldRenderer.cs" />
+    <Compile Include="World\WorldSim.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="MonoGame.Framework">
@@ -59,11 +63,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Icon.ico" />
+    <Content Include="Program\Icon.ico" />
   </ItemGroup>
   <ItemGroup>
     <MonoGameContentReference Include="Content\Content.mgcb" />
-    <None Include="app.manifest" />
+    <None Include="Program\app.manifest" />
   </ItemGroup>
   <Import Project="..\Gears\Gears.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -17,7 +17,7 @@ namespace Seed
 		List<float> _timeScales = new List<float> { 0, 5, 20, 100 };
 		int _timeScaleIndex = 0;
 
-		public World.Layers ShowLayers = World.Layers.ElevationSubtle | World.Layers.TemperatureSubtle | World.Layers.Water | World.Layers.SoilFertility | World.Layers.Vegetation | World.Layers.Animals;
+		public World.Layers ShowLayers = World.Layers.Probes | World.Layers.ElevationSubtle | World.Layers.TemperatureSubtle | World.Layers.Water | World.Layers.SoilFertility | World.Layers.Vegetation | World.Layers.Animals;
 		public List<Tuple<World.Layers, Keys>> LayerDisplayKeys = new List<Tuple<World.Layers, Keys>>()
 		{
 			new Tuple<World.Layers, Keys>(World.Layers.Water, Keys.F1),
@@ -41,15 +41,20 @@ namespace Seed
 		public Point TileInfoPoint;
 
 		public World World;
+
 		public WorldGUI(World world)
 		{
 			World = world;
 			world.TimeScale = _timeScales[_timeScaleIndex];
 
-			Tools.Add(new ToolSelect() { Name = "Info", HotKey = Keys.D1 });
-			Tools.Add(new ToolElevation() { Name = "Elevation Up", HotKey = Keys.D2, DeltaPerSecond = 1000.0f });
-			Tools.Add(new ToolElevation() { Name = "Elevation Down", HotKey = Keys.D3, DeltaPerSecond = -1000.0f });
+			Tools.Add(new ToolSelect() { Gui = this, Name = "Info", HotKey = Keys.D1 });
+			Tools.Add(new ToolElevation() { Gui = this, Name = "Elevation Up", HotKey = Keys.D2, DeltaPerSecond = 1000.0f });
+			Tools.Add(new ToolElevation() { Gui = this, Name = "Elevation Down", HotKey = Keys.D3, DeltaPerSecond = -1000.0f });
+			Tools.Add(new ToolProbe() { Gui = this, Name = "Probe 1", HotKey = Keys.D4, ProbeIndex = 0 });
+			Tools.Add(new ToolProbe() { Gui = this, Name = "Probe 2", HotKey = Keys.D5, ProbeIndex = 1 });
+			Tools.Add(new ToolProbe() { Gui = this, Name = "Probe 3", HotKey = Keys.D6, ProbeIndex = 2 });
 			SelectTool(0);
+
 		}
 
 		public void LoadContent(GraphicsDevice graphics, ContentManager content)
@@ -119,13 +124,14 @@ namespace Seed
 				{
 					curTool.OnMouseWheel(wheelDelta);
 				}
-				curTool.Update(gameTime, TileInfoPoint, this);
+				curTool.Update(gameTime, TileInfoPoint);
 			}
 
 			_lastKeyboardState = keyboardState;
 			_lastMouseState = mouseState;
 
 			World.Update(gameTime);
+
 		}
 
 		Tool GetTool(int index)
@@ -155,7 +161,7 @@ namespace Seed
 			var curTool = GetTool(ActiveTool);
 			if (curTool != null)
 			{
-				curTool.DrawWorld(spriteBatch, this, state);
+				curTool.DrawWorld(spriteBatch, state);
 			}
 
 			spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
@@ -197,7 +203,7 @@ namespace Seed
 
 			if (curTool != null)
 			{
-				curTool.DrawTooltip(spriteBatch, this, state);
+				curTool.DrawTooltip(spriteBatch, state);
 			}
 
 			spriteBatch.End();
