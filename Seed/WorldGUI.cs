@@ -25,7 +25,10 @@ namespace Seed
 			new Tuple<World.Layers, Keys>(World.Layers.GroundWater, Keys.F3),
 			new Tuple<World.Layers, Keys>(World.Layers.CloudCoverage, Keys.F4),
 			new Tuple<World.Layers, Keys>(World.Layers.Temperature, Keys.F5),
-			new Tuple<World.Layers, Keys>(World.Layers.Wind, Keys.F6),
+			new Tuple<World.Layers, Keys>(World.Layers.Pressure, Keys.F6),
+			new Tuple<World.Layers, Keys>(World.Layers.Humidity, Keys.F7),
+			new Tuple<World.Layers, Keys>(World.Layers.Rainfall, Keys.F8),
+			new Tuple<World.Layers, Keys>(World.Layers.Wind, Keys.F9),
 		};
 
 
@@ -175,7 +178,7 @@ namespace Seed
 				textY += 15;
 			}
 
-			spriteBatch.DrawString(Font, (int)(World.GetTimeOfYear(ref state)*12+1) + "/" + World.GetYear(ref state), new Vector2(5, textY), Color.White);
+			spriteBatch.DrawString(Font, (int)(World.GetTimeOfYear(state)*12+1) + "/" + World.GetYear(state), new Vector2(5, textY), Color.White);
 			textY += 20;
 
 

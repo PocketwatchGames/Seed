@@ -61,7 +61,8 @@ namespace Seed
 					state.Elevation[index] = e;
 					float latitude = GetLatitude(y);
 					state.Temperature[index] = (1.0f - MathHelper.Clamp(e - state.SeaLevel, 0, MaxElevation) / (MaxElevation - state.SeaLevel)) * (1.0f - latitude * latitude) * (MaxTemperature - MinTemperature) + MinTemperature;
-					state.CloudCover[index] = GetPerlinNormalized(noise, x, y, 3.0f, 2000);
+					state.CloudCover[index] = GetPerlinMinMax(noise, x, y, 3.0f, 2000, 0, 2);
+					state.Humidity[index] = GetPerlinMinMax(noise, x, y, 3.0f, 3000, 0, 2);
 					state.CloudElevation[index] = state.Elevation[index] + 1000;
 					state.WaterTableDepth[index] = GetPerlinMinMax(noise, x, y, 1.0f, 200, MinWaterTableDepth, MaxWaterTableDepth);
 					state.SoilFertility[index] = GetPerlinNormalized(noise, x, y, 1.0f, 400);

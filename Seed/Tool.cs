@@ -38,6 +38,7 @@ namespace Seed
 			spriteBatch.DrawString(gui.Font, "Elevation: " + (int)(state.Elevation[index]), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "Temperature: " + (int)(state.Temperature[index] - World.FreezingTemperature), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "Pressure: " + (state.Pressure[index] / World.StaticPressure).ToString("0.00"), new Vector2(5, textY += 15), Color.White);
+			spriteBatch.DrawString(gui.Font, "Humidity: " + state.Humidity[index].ToString("0.00"), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "CloudCover: " + state.CloudCover[index].ToString("0.00"), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "Rainfall: " + (state.Rainfall[index] * World.TicksPerYear).ToString("0.00"), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "Evaporation: " + (state.Evaporation[index] * World.TicksPerYear).ToString("0.00"), new Vector2(5, textY += 15), Color.White);

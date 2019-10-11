@@ -30,6 +30,7 @@ namespace Seed
 	public partial class World
 	{
 		public const int TicksPerYear = 360;
+		public const float SecondsPerTick = 365*24*60*60/(float)TicksPerYear;
 		public const int MaxSpecies = 4;
 
 		public const float tileSize = 400000;
@@ -51,7 +52,7 @@ namespace Seed
 		public const float MinElevation = -10000.0f;
 		public const float EvapRateWind = 2.0f / TicksPerYear;
 		public const float EvapRateTemperature = 5.0f / TicksPerYear;
-		public const float tradeWindSpeed = 10.0f / TicksPerYear;
+		public const float tradeWindSpeed = 3.0f / TicksPerYear;
 		public const float pressureDifferentialWindSpeed = 0.0005f / TicksPerYear;
 		public const float RainfallRate = 10.0f / TicksPerYear;
 		public const float FlowSpeed = 0.01f / TicksPerYear;
@@ -86,7 +87,8 @@ namespace Seed
 		public float rainPointTemperatureMultiplier = 0.00075f; // adjustment for temperature
 		public float temperatureLapseRate = -0.0065f;
 		public float EvaporativeCoolingRate = 1.0f;
-		public float temperatureLossFromWind = 2.0f / TicksPerYear;
+		public float temperatureLossFromWind = 10.0f / TicksPerYear;
+		public float humidityLossFromWind = 1.0f / TicksPerYear;
 		public float windInertia = 0.1f;
 		public const float StaticPressure = 101325;
 		public const float StdTemp = 288.15f;
@@ -94,7 +96,12 @@ namespace Seed
 		public const float GravitationalAcceleration = 9.80665f;
 		public const float MolarMassEarthAir = 0.0289644f;
 		public const float UniversalGasConstant = 8.3144598f;
-
+		public const float humidityCloudAbsorptionRate = 10000.0f / TicksPerYear;
+		public const float humidityToCloudWindSpeed = 100000.0f / TicksPerYear;
+		public const float upperAtmosphereCoolingRate = 100.0f / TicksPerYear;
+		public const float MaxTropopauseElevation = 17000f;
+		public const float MinTropopauseElevation = 9000f;
+		public const float TropopauseElevationSeason = 1000f;
 
 		#endregion
 
@@ -125,6 +132,7 @@ namespace Seed
 
 			public float[] Elevation;
 			public float[] Temperature;
+			public float[] Humidity;
 			public float[] Rainfall;
 			public float[] Evaporation;
 			public float[] CloudCover;
@@ -160,6 +168,7 @@ namespace Seed
 				States[i].Elevation = new float[s];
 				States[i].CloudElevation = new float[s];
 				States[i].Temperature = new float[s];
+				States[i].Humidity = new float[s];
 				States[i].CloudCover = new float[s];
 				States[i].WaterTableDepth = new float[s];
 				States[i].GroundWater = new float[s];
@@ -233,13 +242,13 @@ namespace Seed
 			return y * Size + x + s * Size*Size;
 		}
 
-		public float GetTimeOfYear(ref State state)
+		public float GetTimeOfYear(State state)
 		{
 			float t = (float)state.Ticks / TicksPerYear;
 			return t - (int)t;
 		}
 
-		public int GetYear(ref State state)
+		public int GetYear(State state)
 		{
 			return state.Ticks / TicksPerYear;
 		}
@@ -248,20 +257,5 @@ namespace Seed
 		{
 			return ((float)y / Size) * 2 - 1.0f;
 		}
-
-		Vector3 GetSunAngle(ref State state, float latitude)
-		{
-
-			float angleOfInclination = planetTiltAngle * (float)Math.Sin(Math.PI * 2 * (GetTimeOfYear(ref state) - 0.25f));
-			//float timeOfDay = (-sunPhase + 0.5f) * Math.PI * 2;
-			float timeOfDay = (float)0;
-			float azimuth = (float)Math.Atan2(Math.Sin(timeOfDay), Math.Cos(timeOfDay) * Math.Sin(latitude * Math.PI) - Math.Tan(angleOfInclination) * Math.Cos(latitude * Math.PI));
-			float elevation = (float)Math.Asin((Math.Sin(latitude) * Math.Sin(angleOfInclination) + Math.Cos(latitude) * Math.Cos(angleOfInclination) * Math.Cos(timeOfDay)));
-
-			float cosOfElevation = (float)Math.Cos(elevation);
-			Vector3 sunVec = new Vector3((float)Math.Sin(azimuth) * cosOfElevation, (float)Math.Cos(azimuth) * cosOfElevation, (float)Math.Sin(elevation));
-			return sunVec;
-		}
-
 	}
 }

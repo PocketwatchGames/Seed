@@ -29,8 +29,10 @@ namespace Seed
 			Temperature = 1 << 12,
 			TemperatureSubtle = 1 << 13,
 			Wind = 1 << 14,
+			Pressure = 1 << 15,
+			Humidity = 1 << 16,
+			Rainfall = 1 << 17,
 
-//			Rainfall,
 		}
 
 
@@ -126,6 +128,25 @@ namespace Seed
 							color = Color.Lerp(Color.LightBlue, Color.Red, Math.Min(1.0f, (state.Temperature[index] - MinTemperature) / (MaxTemperature - MinTemperature)));
 							spriteBatch.Draw(whiteTex, rect, color);
 						}
+						else if (showLayers.HasFlag(Layers.Pressure))
+						{
+							float minPressure = StaticPressure - 40000;
+							float maxPressure = StaticPressure + 10000;
+							color = Color.Lerp(Color.Black, Color.White, MathHelper.Clamp((state.Pressure[index] - minPressure) / (maxPressure - minPressure), 0, 1));
+							spriteBatch.Draw(whiteTex, rect, color);
+						}
+						else if (showLayers.HasFlag(Layers.Humidity))
+						{
+							float maxHumidity = 5;
+							color = Color.Lerp(Color.Black, Color.Blue, Math.Min(1.0f, state.Humidity[index] / maxHumidity));
+							spriteBatch.Draw(whiteTex, rect, color);
+						}
+						else if (showLayers.HasFlag(Layers.Rainfall))
+						{
+							float maxRainfall = 5.0f / TicksPerYear;
+							color = Color.Lerp(Color.Black, Color.Blue, Math.Min(1.0f, state.Rainfall[index] / maxRainfall));
+							spriteBatch.Draw(whiteTex, rect, color);
+						}
 						else if (showLayers.HasFlag(Layers.GroundWater))
 						{
 							color = Color.Lerp(Color.DarkBlue, Color.Gray, Math.Min(1.0f, state.GroundWater[index] / (MaxWaterTableDepth * MaxSoilPorousness)));
@@ -151,10 +172,20 @@ namespace Seed
 						}
 						if (showLayers.HasFlag(Layers.Wind))
 						{
-							var wind = state.Wind[index];
+							//							var wind = state.Wind[index];
+							float elevationOrSeaLevel = Math.Max(state.SeaLevel, elevation);
+							var wind = GetWindAtElevation(state, state.CloudElevation[index], elevationOrSeaLevel, index, GetLatitude(y), state.Normal[index]);
 							float maxWindSpeed = 0.03f;
+							Color windColor;
+							if (wind.Z < 0)
+							{
+								windColor = Color.Lerp(Color.White, Color.Blue, -wind.Z / maxWindSpeed);
+							} else
+							{
+								windColor = Color.Lerp(Color.White, Color.Red, wind.Z / maxWindSpeed);
+							}
 							spriteBatch.Draw(whiteTex, new Rectangle(rect.X + tileRenderSize / 2 - 1, rect.Y + tileRenderSize / 2 - 1, 3, 3), null, Color.White * 0.5f);
-							spriteBatch.Draw(whiteTex, new Rectangle(rect.X + tileRenderSize / 2, rect.Y + tileRenderSize / 2, (int)(tileRenderSize * wind.Length() / maxWindSpeed), 1), null, Color.White, (float)Math.Atan2(wind.Y, wind.X), new Vector2(0, 0.5f), SpriteEffects.None, 0);
+							spriteBatch.Draw(whiteTex, new Rectangle(rect.X + tileRenderSize / 2, rect.Y + tileRenderSize / 2, (int)(tileRenderSize * wind.Length() / maxWindSpeed), 1), null, windColor, (float)Math.Atan2(wind.Y, wind.X), new Vector2(0, 0.5f), SpriteEffects.None, 0);
 						}
 					}
 				}

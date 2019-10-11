@@ -104,6 +104,67 @@ namespace Seed
 			float pressure = standardPressure - verticalWindPressureAdjustment * state.Wind[index].Z + temperatureGradientPressureAdjustment * temperatureDifferential;
 			return pressure;
 		}
+
+
+		Vector3 GetSunAngle(ref State state, float latitude)
+		{
+
+			float angleOfInclination = planetTiltAngle * (float)Math.Sin(Math.PI * 2 * (GetTimeOfYear(state) - 0.25f));
+			//float timeOfDay = (-sunPhase + 0.5f) * Math.PI * 2;
+			float timeOfDay = (float)0;
+			float azimuth = (float)Math.Atan2(Math.Sin(timeOfDay), Math.Cos(timeOfDay) * Math.Sin(latitude * Math.PI) - Math.Tan(angleOfInclination) * Math.Cos(latitude * Math.PI));
+			float elevation = (float)Math.Asin((Math.Sin(latitude) * Math.Sin(angleOfInclination) + Math.Cos(latitude) * Math.Cos(angleOfInclination) * Math.Cos(timeOfDay)));
+
+			float cosOfElevation = (float)Math.Cos(elevation);
+			Vector3 sunVec = new Vector3((float)Math.Sin(azimuth) * cosOfElevation, (float)Math.Cos(azimuth) * cosOfElevation, (float)Math.Sin(elevation));
+			return sunVec;
+		}
+
+
+		Vector3 GetWindAtElevation(State state, float windElevation, float landElevation, int index, float latitude, Vector3 normal)
+		{
+			float tropopauseElevation = (1.0f - Math.Abs(latitude)) * (MaxTropopauseElevation - MinTropopauseElevation) + MinTropopauseElevation + TropopauseElevationSeason * latitude * (GetTimeOfYear(state) * 2 - 1);
+			float hadleyCellHeight = Math.Min(1.0f, (windElevation - landElevation) / (tropopauseElevation - landElevation));
+
+			Vector3 wind = Vector3.Zero;
+			float pitch = (float)(latitude * Math.PI * 3f);
+			if (latitude < 0.3333 && latitude > -0.3333)
+			{
+				float yaw = (float)(latitude * Math.PI * 1.5f);
+				wind.X = (float)(Math.Abs(Math.Sin(pitch)) * -Math.Cos(yaw));
+				wind.Y = (float)(Math.Abs(Math.Sin(pitch)) * -Math.Sin(yaw + Math.PI * hadleyCellHeight));
+				wind.Z = (float)Math.Cos(pitch) * (float)Math.Sqrt(Math.Sin(hadleyCellHeight * Math.PI));
+			}
+			else if (latitude < 0.667 && latitude > -0.667)
+			{
+				float yaw = (float)(latitude * Math.PI * 1.5f);
+				wind.X = (float)(Math.Abs(Math.Sin(pitch)) * -Math.Cos(yaw));
+				wind.Y = (float)(Math.Abs(Math.Sin(pitch)) * Math.Sin(yaw + Math.PI * hadleyCellHeight));
+				wind.Z = (float)Math.Cos(pitch) * (float)Math.Sqrt(Math.Sin(hadleyCellHeight * Math.PI));
+			}
+			else
+			{
+				float yaw = (float)(latitude * Math.PI * 1.5f);
+				wind.X = (float)(Math.Abs(Math.Sin(pitch)) * Math.Cos(yaw));
+				wind.Y = (float)(Math.Abs(Math.Sin(pitch)) * Math.Sin(yaw + Math.PI * hadleyCellHeight));
+				wind.Z = (float)Math.Cos(pitch) * (float)Math.Sqrt(Math.Sin(hadleyCellHeight * Math.PI));
+			}
+			wind *= tradeWindSpeed;
+
+			// TODO: I'm reversing the pressure-based wind at the tropopause -- that doesn't seem right.  Should I be simulating pressure differentials at the tropopause to distribute heat at the upper atmosphere?
+			wind += state.Wind[index] * (1.0f - 2 * hadleyCellHeight);
+
+			float windElevationFactor = 1.0f / 2000;
+			float maxWindFrictionElevation = 1000;
+			float friction = Math.Max(0.0f, (1.0f - (windElevation - landElevation) / maxWindFrictionElevation));
+			Vector3 up = new Vector3(0, 0, 1);
+			friction = friction * friction * (1.0f - Vector3.Dot(normal, up));
+			float altitudeSpeedMultiplier = 1.0f + (float)Math.Pow(Math.Min(1.0f, windElevation * windElevationFactor), 2) * (1.0f - friction);
+			wind *= altitudeSpeedMultiplier;
+
+			return wind;
+		}
+
 		public void Tick(State state, State nextState)
 		{
 			nextState = (State)state.Clone();
@@ -123,7 +184,7 @@ namespace Seed
 
 		public void TickEarth(State state, State nextState)
 		{
-			float timeOfYear = GetTimeOfYear(ref state);
+			float timeOfYear = GetTimeOfYear(state);
 			float timeOfYearTempDelta = (float)-Math.Cos(timeOfYear * Math.PI * 2);
 			for (int x = 0; x < Size; x++)
 			{
@@ -146,31 +207,6 @@ namespace Seed
 
 					//nextState.Temperature[index] = temperature + (heatEntered - heatLeft);
 
-					Vector3 wind = Vector3.Zero;
-					float pitch = (float)(latitude * Math.PI * 3f);
-					if (latitude < 0.3333 && latitude > -0.3333)
-					{
-						float yaw = (float)(latitude * Math.PI * 1.5f);
-						wind.X = (float)(Math.Abs(Math.Sin(pitch)) * -Math.Cos(yaw));
-						wind.Y = (float)(Math.Abs(Math.Sin(pitch)) * -Math.Sin(yaw));
-						wind.Z = (float)Math.Cos(pitch);
-					}
-					else if (latitude < 0.667 && latitude > -0.667)
-					{
-						float yaw = (float)(latitude * Math.PI * 1.5f);
-						wind.X = (float)(Math.Abs(Math.Sin(pitch)) * -Math.Cos(yaw));
-						wind.Y = (float)(Math.Abs(Math.Sin(pitch)) * Math.Sin(yaw));
-						wind.Z = (float)Math.Cos(pitch);
-					}
-					else
-					{
-						float yaw = (float)(latitude * Math.PI * 1.5f);
-						wind.X = (float)(Math.Abs(Math.Sin(pitch)) * Math.Cos(yaw));
-						wind.Y = (float)(Math.Abs(Math.Sin(pitch)) * Math.Sin(yaw));
-						wind.Z = (float)Math.Cos(pitch);
-					}
-					wind *= tradeWindSpeed;
-
 					Vector2 pressureDifferential = Vector2.Zero;
 					float pressure = state.Pressure[index];
 					pressureDifferential.X -= state.Pressure[GetIndex(WrapX(x + 1), y)] - pressure;
@@ -191,7 +227,7 @@ namespace Seed
 					int coriolisDir = latitude > 0 ? 1 : -1;
 
 					Vector2 windXY = pressureDifferentialWindSpeed * (coriolisDir * coriolisPower * Vector2.Transform(pressureDifferential, Matrix.CreateRotationZ((float)Math.PI / 2)) + (1.0f - coriolisPower) * pressureDifferential);
-					wind += new Vector3(windXY.X, windXY.Y, (pressureDifferential.X + pressureDifferential.Y) / 4 * pressureDifferentialWindSpeed);
+					Vector3 pressureWind = new Vector3(windXY.X, windXY.Y, (pressureDifferential.X + pressureDifferential.Y) / 4 * pressureDifferentialWindSpeed);
 
 					Vector3 nWind = Vector3.Zero;
 					for (int i = 0; i < 4; i++)
@@ -201,18 +237,17 @@ namespace Seed
 						var neighborWind = state.Wind[nIndex];
 						nWind += neighborWind;
 					}
-					wind = wind * 0.9f + nWind / 4 * 0.1f; 
+					pressureWind = pressureWind * 0.9f + nWind / 4 * 0.1f; 
 
-					nextState.Wind[index] = wind;
+					nextState.Wind[index] = pressureWind;
 
 
 
 
 
 					float elevationOrSeaLevel = Math.Max(state.SeaLevel, elevation);
-					float humidity = Math.Min(1.0f, cloudCover / 2.0f);
-					float airPressure = MathHelper.Clamp(1.0f - troposphereAtmosphereContent * elevationOrSeaLevel / troposphereElevation, 1.0f - troposphereAtmosphereContent, 1.0f);
-					float airPressureInverse = 1.0f / airPressure;
+					float humidity = state.Humidity[index];
+					float airPressureInverse = StaticPressure / pressure;
 					float atmosphereMass;
 					if (elevation <= troposphereElevation) {
 						atmosphereMass = (troposphereElevation - elevationOrSeaLevel) / troposphereAtmosphereContent;
@@ -269,7 +304,8 @@ namespace Seed
 					}
 
 
-					float windSpeed = wind.Length();
+					var windAtSurface = GetWindAtElevation(state, elevationOrSeaLevel, elevationOrSeaLevel, index, latitude, terrainNormal);
+					float windSpeed = windAtSurface.Length();
 					float tempWithSun = temperature;
 					float evapTemperature = 1.0f - MathHelper.Clamp((tempWithSun - evapMinTemperature) / evapTemperatureRange, 0, 1);
 					float evapRate = (EvapRateTemperature * (1.0f - evapTemperature * evapTemperature) + EvapRateWind * windSpeed) * airPressureInverse * MathHelper.Clamp(1.0f - (humidity * airPressureInverse / (dewPointRange * atmosphereMass)), 0, 1);
@@ -277,7 +313,7 @@ namespace Seed
 					float totalEvap = 0;
 					if (elevation <= state.SeaLevel)
 					{
-						cloudCover += evapRate;
+						humidity += evapRate;
 						totalEvap += evapRate;
 					}
 					else
@@ -288,12 +324,12 @@ namespace Seed
 							float waterSurfaceArea = Math.Min(1.0f, (float)Math.Sqrt(surfaceWater));
 							float evap = Math.Max(0, Math.Min(surfaceWater, waterSurfaceArea * evapRate));
 							surfaceWater -= evap;
-							cloudCover += evap;
+							humidity += evap;
 							totalEvap += evap;
 						}
 						var groundWaterEvap = Math.Max(0, Math.Min(groundWater, groundWater / waterTableDepth * evapRate));
 						groundWater -= groundWaterEvap;
-						cloudCover += groundWaterEvap;
+						humidity += groundWaterEvap;
 						totalEvap += groundWaterEvap;
 					}
 
@@ -301,45 +337,61 @@ namespace Seed
 
 
 
-					if (wind.X != 0 || wind.Y != 0)
+					//if (windAtSurface.X != 0 || windAtSurface.Y != 0)
+					//{
+					//	loss += state.Temperature[index] * (Math.Abs(windAtSurface.X) + Math.Abs(windAtSurface.Y)) * temperatureLossFromWind;
+					//	humidity += state.Humidity[index] * (Math.Abs(windAtSurface.X) + Math.Abs(windAtSurface.Y)) * humidityLossFromWind;
+					//}
+					//for (int i = 0; i < 4; i++)
+					//{
+					//	var neighbor = GetNeighbor(x, y, i);
+					//	int nIndex = GetIndex(neighbor.Item1, neighbor.Item2);
+					//	var neighborWind = state.Wind[nIndex];
+					//	float neighborTemp = state.Temperature[nIndex];
+					//	float neighborHum = state.Humidity[nIndex];
+					//	float windXPercent = Math.Abs(neighborWind.X) / (Math.Abs(neighborWind.X) + Math.Abs(neighborWind.Y));
+					//	if (neighborWind.X > 0 && i==0)
+					//	{
+					//		gain += neighborTemp * Math.Abs(neighborWind.X) * temperatureLossFromWind;
+					//		humidity += neighborHum * Math.Abs(neighborWind.X) * humidityLossFromWind;
+					//	}
+					//	else if (neighborWind.X < 0 && i==1)
+					//	{
+					//		gain += neighborTemp * Math.Abs(neighborWind.X) * temperatureLossFromWind;
+					//		humidity += neighborHum * Math.Abs(neighborWind.X) * humidityLossFromWind;
+					//	}
+					//	if (neighborWind.Y > 0 && i==3)
+					//	{
+					//		gain += neighborTemp * Math.Abs(neighborWind.Y) * temperatureLossFromWind;
+					//		humidity += neighborHum * Math.Abs(neighborWind.Y) * humidityLossFromWind;
+					//	}
+					//	else if (neighborWind.Y < 0 && i==2)
+					//	{
+					//		gain += neighborTemp * Math.Abs(neighborWind.Y) * temperatureLossFromWind;
+					//		humidity += neighborHum * Math.Abs(neighborWind.Y) * humidityLossFromWind;
+					//	}
+					//}
+
+					// in high pressure systems, air from the upper atmosphere will cool us
+					if (windAtSurface.Z < 0)
 					{
-						loss += state.Temperature[index] * (Math.Abs(wind.X)+Math.Abs(wind.Y)) * temperatureLossFromWind;
-					}
-					for (int i = 0; i < 4; i++)
-					{
-						var neighbor = GetNeighbor(x, y, i);
-						int nIndex = GetIndex(neighbor.Item1, neighbor.Item2);
-						var neighborWind = state.Wind[nIndex];
-						float neighborTemp = state.Temperature[nIndex];
-						float windXPercent = Math.Abs(neighborWind.X) / (Math.Abs(neighborWind.X) + Math.Abs(neighborWind.Y));
-						if (neighborWind.X > 0 && i==0)
-						{
-							gain += neighborTemp * Math.Abs(neighborWind.X) * temperatureLossFromWind;
-						}
-						else if (neighborWind.X < 0 && i==1)
-						{
-							gain += neighborTemp * Math.Abs(neighborWind.X) * temperatureLossFromWind;
-						}
-						if (neighborWind.Y > 0 && i==3)
-						{
-							gain += neighborTemp * Math.Abs(neighborWind.Y) * temperatureLossFromWind;
-						}
-						else if (neighborWind.Y < 0 && i==2)
-						{
-							gain += neighborTemp * Math.Abs(neighborWind.Y) * temperatureLossFromWind;
-						}
+						loss -= upperAtmosphereCoolingRate * windAtSurface.Z;
 					}
 
 					nextState.Temperature[index] = temperature + gain - loss;
-					nextState.CloudElevation[index] = Math.Max(state.SeaLevel, state.Elevation[index]) + 1000;
 
-
-
-
+					float cloudElevation = state.CloudElevation[index];
+					float dewPointTemp = (float)Math.Pow(humidity / (dewPointRange * atmosphereMass), 0.25f) * dewPointTemperatureRange + dewPointZero;
+					float dewPointElevation = Math.Max(0, (dewPointTemp - tempWithSun) / temperatureLapseRate) + elevationOrSeaLevel;
+					nextState.CloudElevation[index] = dewPointElevation;
+					float elevationDelta = dewPointElevation - cloudElevation;
 
 
 					// Earth
 
+					float humidityToCloud = MathHelper.Clamp((humidityCloudAbsorptionRate + windAtSurface.Z * humidityToCloudWindSpeed) * humidity / (cloudElevation - elevation), 0, humidity);
+					humidity -= humidityToCloud;
+					cloudCover += humidityToCloud;
 
 					//temperature -= Math.Min(1.0f, cloudCover) * 20.0f;
 
@@ -378,7 +430,6 @@ namespace Seed
 					float rainfall = 0;
 					if (cloudCover > 0)
 					{
-						float cloudElevation = state.CloudElevation[index];
 						float temperatureAtCloudElevation = cloudElevation * temperatureLapseRate + temperature;
 						float rainPoint = Math.Max(0, (temperatureAtCloudElevation - dewPointZero) * rainPointTemperatureMultiplier);
 						if (cloudCover > rainPoint)
@@ -390,12 +441,13 @@ namespace Seed
 								nextState.SurfaceWater[index] += rainfall;
 							}
 						}
-						if (wind.X != 0 || wind.Y != 0)
+						var windAtCloudElevation = GetWindAtElevation(state, cloudElevation, elevationOrSeaLevel, index, latitude, terrainNormal);
+						if (windAtCloudElevation.X != 0 || windAtCloudElevation.Y != 0)
 						{
-							float windXPercent = Math.Abs(wind.X) / (Math.Abs(wind.X) + Math.Abs(wind.Y));
-							float cloudMove = Math.Min(cloudCover, Math.Abs(wind.X) + Math.Abs(wind.Y));
+							float windXPercent = Math.Abs(windAtCloudElevation.X) / (Math.Abs(windAtCloudElevation.X) + Math.Abs(windAtCloudElevation.Y));
+							float cloudMove = Math.Min(cloudCover, Math.Abs(windAtCloudElevation.X) + Math.Abs(windAtCloudElevation.Y));
 							cloudCover -= cloudMove;
-							if (wind.X > 0)
+							if (windAtCloudElevation.X > 0)
 							{
 								nextState.CloudCover[GetIndex(WrapX(x + 1), y)] += cloudMove * windXPercent;
 							}
@@ -403,7 +455,7 @@ namespace Seed
 							{
 								nextState.CloudCover[GetIndex(WrapX(x - 1), y)] += cloudMove * windXPercent;
 							}
-							if (wind.Y > 0)
+							if (windAtCloudElevation.Y > 0)
 							{
 								nextState.CloudCover[GetIndex(x, WrapY(y + 1))] += cloudMove * (1.0f - windXPercent);
 							}
@@ -416,11 +468,12 @@ namespace Seed
 					nextState.Rainfall[index] = rainfall;
 					nextState.Evaporation[index] = totalEvap;
 					nextState.CloudCover[index] = cloudCover;
+					nextState.Humidity[index] = humidity;
 
 					if (elevation <= state.SeaLevel)
 					{
 						nextState.Gradient[index] = Vector2.Zero;
-						nextState.Normal[index] = Vector3.Up;
+						nextState.Normal[index] = new Vector3(0,0,1);
 					}
 					else
 					{
