@@ -288,12 +288,11 @@ namespace Seed
 					float reflection = 0;
 					if (sunVector.Z > 0)
 					{
-						float slope = sunAngle; // use this for cloud, and water if necessary
-						cloudGain = slope * heatGainFromSun * cloudAbsorptionFactor;
-						cloudReflection = slope * heatGainFromSun * cloudReflectionFactor;
+						cloudGain = sunAngle * heatGainFromSun * cloudAbsorptionFactor;
+						cloudReflection = sunAngle * heatGainFromSun * cloudReflectionFactor;
 
 						// gain any heat not absorbed on first pass through the clouds
-						float sunGain = slope * heatGainFromSun - cloudGain - cloudReflection;
+						float slope = 1;
 						if (elevation > state.SeaLevel) // land
 						{
 							slope = Math.Max(0, Vector3.Dot(terrainNormal, sunVector));
@@ -304,6 +303,7 @@ namespace Seed
 						{
 							reflection = heatReflectionWater;
 						}
+						float sunGain = slope * heatGainFromSun - cloudGain - cloudReflection;
 						gain += sunGain * (1.0f - reflection) * (1.0f - humidityPercentage);
 
 						// trap some heat in
@@ -313,8 +313,8 @@ namespace Seed
 
 					var windAtSurface = GetWindAtElevation(state, elevationOrSeaLevel, elevationOrSeaLevel, index, latitude, terrainNormal);
 					float windSpeed = windAtSurface.Length();
-					float tempWithSun = temperature;
-					float evapTemperature = 1.0f - MathHelper.Clamp((tempWithSun - evapMinTemperature) / evapTemperatureRange, 0, 1);
+					float tempWithSunAtGround = temperature * (1.0f - Math.Min(cloudCover / cloudContentFullAbsorption, 1.0f)) * sunAngle * localSunHeat;
+					float evapTemperature = 1.0f - MathHelper.Clamp((tempWithSunAtGround - evapMinTemperature) / evapTemperatureRange, 0, 1);
 					float evapRate = (EvapRateTemperature * (1.0f - evapTemperature * evapTemperature) + EvapRateWind * windSpeed) * airPressureInverse * MathHelper.Clamp(1.0f - (humidity * airPressureInverse / (dewPointRange * atmosphereMass)), 0, 1);
 
 					float totalEvap = 0;
@@ -388,7 +388,7 @@ namespace Seed
 
 					float cloudElevation = state.CloudElevation[index];
 					float dewPointTemp = (float)Math.Pow(humidity / (dewPointRange * atmosphereMass), 0.25f) * dewPointTemperatureRange + dewPointZero;
-					float dewPointElevation = Math.Max(0, (dewPointTemp - tempWithSun) / temperatureLapseRate) + elevationOrSeaLevel;
+					float dewPointElevation = Math.Max(0, (dewPointTemp - temperature) / temperatureLapseRate) + elevationOrSeaLevel;
 					nextState.CloudElevation[index] = dewPointElevation;
 					float elevationDelta = dewPointElevation - cloudElevation;
 

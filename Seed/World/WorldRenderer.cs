@@ -168,24 +168,6 @@ namespace Seed
 							color.A = 255;
 							spriteBatch.Draw(whiteTex, rect, color);
 						}
-						if (showLayers.HasFlag(Layers.Wind))
-						{
-							//							var wind = state.Wind[index];
-							float elevationOrSeaLevel = Math.Max(state.SeaLevel, elevation);
-							var wind = GetWindAtElevation(state, state.CloudElevation[index], elevationOrSeaLevel, index, GetLatitude(y), state.Normal[index]);
-							//var wind = GetWindAtElevation(state, elevationOrSeaLevel, elevationOrSeaLevel, index, GetLatitude(y), state.Normal[index]);
-							float maxWindSpeed = 0.03f;
-							Color windColor;
-							if (wind.Z < 0)
-							{
-								windColor = Color.Lerp(Color.White, Color.Blue, -wind.Z / maxWindSpeed);
-							} else
-							{
-								windColor = Color.Lerp(Color.White, Color.Red, wind.Z / maxWindSpeed);
-							}
-							spriteBatch.Draw(whiteTex, new Rectangle(rect.X + tileRenderSize / 2 - 1, rect.Y + tileRenderSize / 2 - 1, 3, 3), null, Color.White * 0.5f);
-							spriteBatch.Draw(whiteTex, new Rectangle(rect.X + tileRenderSize / 2, rect.Y + tileRenderSize / 2, (int)(tileRenderSize * wind.Length() / maxWindSpeed), 1), null, windColor, (float)Math.Atan2(wind.Y, wind.X), new Vector2(0, 0.5f), SpriteEffects.None, 0);
-						}
 					}
 				}
 
@@ -238,6 +220,26 @@ namespace Seed
 									Rectangle rect = new Rectangle(x * tileRenderSize, y * tileRenderSize, width, width);
 									spriteBatch.Draw(whiteTex, rect, Color.Lerp(Color.White, Color.Black, normalizedCloudCover));
 								}
+							}
+							if (showLayers.HasFlag(Layers.Wind))
+							{
+								//							var wind = state.Wind[index];
+								float elevationOrSeaLevel = Math.Max(state.SeaLevel, state.Elevation[index]);
+								var wind = GetWindAtElevation(state, state.CloudElevation[index], elevationOrSeaLevel, index, GetLatitude(y), state.Normal[index]);
+								//var wind = GetWindAtElevation(state, elevationOrSeaLevel, elevationOrSeaLevel, index, GetLatitude(y), state.Normal[index]);
+								float maxWindSpeed = 0.03f;
+								Color windColor;
+								if (wind.Z < 0)
+								{
+									windColor = Color.Lerp(Color.White, Color.Blue, -wind.Z / maxWindSpeed);
+								}
+								else
+								{
+									windColor = Color.Lerp(Color.White, Color.Red, wind.Z / maxWindSpeed);
+								}
+								Rectangle rect = new Rectangle(x * tileRenderSize, y * tileRenderSize, tileRenderSize, tileRenderSize);
+								spriteBatch.Draw(whiteTex, new Rectangle(rect.X + tileRenderSize / 2 - 1, rect.Y + tileRenderSize / 2 - 1, 3, 3), null, Color.White * 0.5f);
+								spriteBatch.Draw(whiteTex, new Rectangle(rect.X + tileRenderSize / 2, rect.Y + tileRenderSize / 2, (int)(tileRenderSize * wind.Length() / maxWindSpeed), 1), null, windColor, (float)Math.Atan2(wind.Y, wind.X), new Vector2(0, 0.5f), SpriteEffects.None, 0);
 							}
 
 						}

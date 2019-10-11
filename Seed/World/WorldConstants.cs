@@ -47,6 +47,8 @@ namespace Seed
 		public const float evapMinTemperature = 253; // -20 celsius
 		public const float evapMaxTemperature = 373; // 140 celsius
 		public const float evapTemperatureRange = evapMaxTemperature - evapMinTemperature;
+		public const float localSunHeat = 5; // sun can add about 10 degrees farenheit
+
 
 		public float heatLoss = 0.0002f; // how fast a cell loses heat an min elevation, no cloud cover
 		public float heatGainFromSun = 25.0f / TicksPerYear; // how fast a cell gains heat with no cloud cover, modified by sun height
