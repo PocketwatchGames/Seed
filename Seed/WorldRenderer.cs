@@ -175,6 +175,7 @@ namespace Seed
 							//							var wind = state.Wind[index];
 							float elevationOrSeaLevel = Math.Max(state.SeaLevel, elevation);
 							var wind = GetWindAtElevation(state, state.CloudElevation[index], elevationOrSeaLevel, index, GetLatitude(y), state.Normal[index]);
+							//var wind = GetWindAtElevation(state, elevationOrSeaLevel, elevationOrSeaLevel, index, GetLatitude(y), state.Normal[index]);
 							float maxWindSpeed = 0.03f;
 							Color windColor;
 							if (wind.Z < 0)

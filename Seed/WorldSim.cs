@@ -151,8 +151,8 @@ namespace Seed
 			}
 			wind *= tradeWindSpeed;
 
-			// TODO: I'm reversing the pressure-based wind at the tropopause -- that doesn't seem right.  Should I be simulating pressure differentials at the tropopause to distribute heat at the upper atmosphere?
-			wind += state.Wind[index] * (1.0f - 2 * hadleyCellHeight);
+			// TODO: Should I be simulating pressure differentials at the tropopause to distribute heat at the upper atmosphere?
+			wind += state.Wind[index];
 
 			float windElevationFactor = 1.0f / 2000;
 			float maxWindFrictionElevation = 1000;
@@ -337,40 +337,39 @@ namespace Seed
 
 
 
-					//if (windAtSurface.X != 0 || windAtSurface.Y != 0)
-					//{
-					//	loss += state.Temperature[index] * (Math.Abs(windAtSurface.X) + Math.Abs(windAtSurface.Y)) * temperatureLossFromWind;
-					//	humidity += state.Humidity[index] * (Math.Abs(windAtSurface.X) + Math.Abs(windAtSurface.Y)) * humidityLossFromWind;
-					//}
-					//for (int i = 0; i < 4; i++)
-					//{
-					//	var neighbor = GetNeighbor(x, y, i);
-					//	int nIndex = GetIndex(neighbor.Item1, neighbor.Item2);
-					//	var neighborWind = state.Wind[nIndex];
-					//	float neighborTemp = state.Temperature[nIndex];
-					//	float neighborHum = state.Humidity[nIndex];
-					//	float windXPercent = Math.Abs(neighborWind.X) / (Math.Abs(neighborWind.X) + Math.Abs(neighborWind.Y));
-					//	if (neighborWind.X > 0 && i==0)
-					//	{
-					//		gain += neighborTemp * Math.Abs(neighborWind.X) * temperatureLossFromWind;
-					//		humidity += neighborHum * Math.Abs(neighborWind.X) * humidityLossFromWind;
-					//	}
-					//	else if (neighborWind.X < 0 && i==1)
-					//	{
-					//		gain += neighborTemp * Math.Abs(neighborWind.X) * temperatureLossFromWind;
-					//		humidity += neighborHum * Math.Abs(neighborWind.X) * humidityLossFromWind;
-					//	}
-					//	if (neighborWind.Y > 0 && i==3)
-					//	{
-					//		gain += neighborTemp * Math.Abs(neighborWind.Y) * temperatureLossFromWind;
-					//		humidity += neighborHum * Math.Abs(neighborWind.Y) * humidityLossFromWind;
-					//	}
-					//	else if (neighborWind.Y < 0 && i==2)
-					//	{
-					//		gain += neighborTemp * Math.Abs(neighborWind.Y) * temperatureLossFromWind;
-					//		humidity += neighborHum * Math.Abs(neighborWind.Y) * humidityLossFromWind;
-					//	}
-					//}
+					if (windAtSurface.X != 0 || windAtSurface.Y != 0)
+					{
+						humidity += state.Humidity[index] * (Math.Abs(windAtSurface.X) + Math.Abs(windAtSurface.Y)) * humidityLossFromWind;
+					}
+					for (int i = 0; i < 4; i++)
+					{
+						var neighbor = GetNeighbor(x, y, i);
+						int nIndex = GetIndex(neighbor.Item1, neighbor.Item2);
+						var neighborWind = state.Wind[nIndex];
+						float neighborTemp = state.Temperature[nIndex];
+						float neighborHum = state.Humidity[nIndex];
+						float windXPercent = Math.Abs(neighborWind.X) / (Math.Abs(neighborWind.X) + Math.Abs(neighborWind.Y));
+						if (neighborWind.X > 0 && i == 0)
+						{
+							gain += (neighborTemp - temperature) * Math.Min(1.0f, Math.Abs(neighborWind.X) * temperatureLossFromWind);
+							humidity += neighborHum * Math.Abs(neighborWind.X) * humidityLossFromWind;
+						}
+						else if (neighborWind.X < 0 && i == 1)
+						{
+							gain += (neighborTemp - temperature) * Math.Min(1.0f, Math.Abs(neighborWind.X) * temperatureLossFromWind);
+							humidity += neighborHum * Math.Abs(neighborWind.X) * humidityLossFromWind;
+						}
+						if (neighborWind.Y > 0 && i == 3)
+						{
+							gain += (neighborTemp - temperature) * Math.Min(1.0f, Math.Abs(neighborWind.Y) * temperatureLossFromWind);
+							humidity += neighborHum * Math.Abs(neighborWind.Y) * humidityLossFromWind;
+						}
+						else if (neighborWind.Y < 0 && i == 2)
+						{
+							gain += (neighborTemp - temperature) * Math.Min(1.0f, Math.Abs(neighborWind.Y) * temperatureLossFromWind);
+							humidity += neighborHum * Math.Abs(neighborWind.Y) * humidityLossFromWind;
+						}
+					}
 
 					// in high pressure systems, air from the upper atmosphere will cool us
 					if (windAtSurface.Z < 0)
