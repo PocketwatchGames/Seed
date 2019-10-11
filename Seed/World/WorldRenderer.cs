@@ -198,7 +198,7 @@ namespace Seed
 					}
 				}
 
-				if (showLayers.HasFlag(Layers.CloudHeight) || showLayers.HasFlag(Layers.CloudCoverage)) {
+				if (showLayers.HasFlag(Layers.CloudHeight) || showLayers.HasFlag(Layers.CloudCoverage) || showLayers.HasFlag(Layers.Wind)) {
 					for (int x = 0; x < Size; x++)
 					{
 						for (int y = 0; y < Size; y++)

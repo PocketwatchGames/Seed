@@ -175,15 +175,15 @@ namespace Seed
 			return y * Size + x + s * Size*Size;
 		}
 
-		public float GetTimeOfYear(State state)
+		static public float GetTimeOfYear(int ticks)
 		{
-			float t = (float)state.Ticks / TicksPerYear;
+			float t = (float)ticks / TicksPerYear;
 			return t - (int)t;
 		}
 
-		public int GetYear(State state)
+		static public int GetYear(int ticks)
 		{
-			return state.Ticks / TicksPerYear;
+			return ticks / TicksPerYear;
 		}
 
 		public float GetLatitude(int y)

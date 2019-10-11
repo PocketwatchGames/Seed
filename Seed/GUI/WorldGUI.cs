@@ -240,7 +240,7 @@ namespace Seed
 				textY += 15;
 			}
 
-			spriteBatch.DrawString(Font, (int)(World.GetTimeOfYear(state)*12+1) + "/" + World.GetYear(state), new Vector2(5, textY), Color.White);
+			spriteBatch.DrawString(Font, (int)(World.GetTimeOfYear(state.Ticks)*12+1) + "/" + World.GetYear(state.Ticks), new Vector2(5, textY), Color.White);
 			textY += 20;
 
 
