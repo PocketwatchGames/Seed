@@ -36,10 +36,7 @@ namespace Seed
 
 		}
 
-
 		public int tileRenderSize = 10;
-
-
 		public void Draw(GameTime gameTime, SpriteBatch spriteBatch, Layers showLayers, Texture2D whiteTex)
 		{
 			lock (DrawLock) {

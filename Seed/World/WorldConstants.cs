@@ -66,7 +66,7 @@ namespace Seed
 		public float rainPointTemperatureMultiplier = 0.00075f; // adjustment for temperature
 		public float temperatureLapseRate = -0.0065f;
 		public float EvaporativeCoolingRate = 1.0f;
-		public float temperatureLossFromWind = 10000.0f / TicksPerYear;
+		public float temperatureLossFromWind = 1000.0f / TicksPerYear;
 		public float humidityLossFromWind = 10.0f / TicksPerYear;
 		public float windInertia = 0.1f;
 		public const float StaticPressure = 101325;

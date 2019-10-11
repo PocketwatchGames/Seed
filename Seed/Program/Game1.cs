@@ -19,8 +19,8 @@ namespace Seed
 		public Game1()
 		{
 			graphics = new GraphicsDeviceManager(this);
-			graphics.PreferredBackBufferWidth = 1000;
-			graphics.PreferredBackBufferHeight = 1000;
+			graphics.PreferredBackBufferWidth = 1280;
+			graphics.PreferredBackBufferHeight = 720;
 			Content.RootDirectory = "Content";
 		}
 
@@ -90,7 +90,7 @@ namespace Seed
 		{
 			GraphicsDevice.Clear(Color.CornflowerBlue);
 
-			gui.Draw(gameTime, spriteBatch);
+			gui.Draw(gameTime, spriteBatch, GraphicsDevice);
 
 			base.Draw(gameTime);
 		}

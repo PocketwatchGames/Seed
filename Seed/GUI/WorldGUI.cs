@@ -17,6 +17,8 @@ namespace Seed
 		List<float> _timeScales = new List<float> { 0, 5, 20, 100 };
 		int _timeScaleIndex = 0;
 
+		RenderTarget2D _worldRenderTarget;
+
 		public World.Layers ShowLayers = World.Layers.Probes | World.Layers.ElevationSubtle | World.Layers.TemperatureSubtle | World.Layers.Water | World.Layers.SoilFertility | World.Layers.Vegetation | World.Layers.Animals;
 		public List<Tuple<World.Layers, Keys>> LayerDisplayKeys = new List<Tuple<World.Layers, Keys>>()
 		{
@@ -42,6 +44,10 @@ namespace Seed
 
 		public World World;
 
+		public Vector2 CameraPos = new Vector2(50,50);
+		public float Zoom { get { return 0.5f + 0.5f * (float)Math.Pow(ZoomLevel + 0.5f, 4); } }
+		public float ZoomLevel = 0.5f;
+
 		public WorldGUI(World world)
 		{
 			World = world;
@@ -64,18 +70,28 @@ namespace Seed
 			Color[] c = new Color[] { Color.White };
 			whiteTex.SetData(c);
 
+			_worldRenderTarget = new RenderTarget2D(graphics, 1000, 1000);
 		}
 
 		bool WasKeyJustPressed(Keys k, ref KeyboardState state, ref KeyboardState lastState)
 		{
 			return state.IsKeyDown(k) && !lastState.IsKeyDown(k);
 		}
+		bool IsKeyPressed(Keys k, ref KeyboardState state)
+		{
+			return state.IsKeyDown(k);
+		}
 
+		Point ScreenToWorld(Point screenPoint)
+		{
+			Vector2 cameraPos = new Vector2((CameraPos.X * World.tileRenderSize) / Zoom, (CameraPos.Y * World.tileRenderSize) / Zoom);
+			return new Point(MathHelper.Clamp((int)(screenPoint.X / Zoom), 0, World.Size - 1), MathHelper.Clamp((int)(screenPoint.Y / Zoom), 0, World.Size - 1));
+		}
 		public void Update(GameTime gameTime)
 		{
 			var keyboardState = Keyboard.GetState();
 			var mouseState = Mouse.GetState();
-			TileInfoPoint = new Point(MathHelper.Clamp(mouseState.X / World.tileRenderSize, 0, World.Size - 1), MathHelper.Clamp(mouseState.Y / World.tileRenderSize, 0, World.Size - 1));
+			TileInfoPoint = ScreenToWorld(mouseState.Position);
 
 			foreach (var k in LayerDisplayKeys)
 			{
@@ -108,6 +124,36 @@ namespace Seed
 				_timeScaleIndex = MathHelper.Min(_timeScales.Count - 1, _timeScaleIndex + 1);
 				World.TimeScale = _timeScales[_timeScaleIndex];
 			}
+
+			if (WasKeyJustPressed(Keys.Q, ref keyboardState, ref _lastKeyboardState))
+			{
+				ZoomLevel = Math.Max(0, ZoomLevel - 0.25f);
+			}
+			if (WasKeyJustPressed(Keys.E, ref keyboardState, ref _lastKeyboardState))
+			{
+				ZoomLevel = Math.Min(1, ZoomLevel + 0.25f);
+			}
+			Vector2 cameraMove = Vector2.Zero;
+			if (IsKeyPressed(Keys.W, ref keyboardState))
+			{
+				cameraMove.Y--;
+			}
+			if (IsKeyPressed(Keys.A, ref keyboardState))
+			{
+				cameraMove.X--;
+			}
+			if (IsKeyPressed(Keys.S, ref keyboardState))
+			{
+				cameraMove.Y++;
+			}
+			if (IsKeyPressed(Keys.D, ref keyboardState))
+			{
+				cameraMove.X++;
+			}
+			float cameraSpeed = 100 / Zoom;
+			CameraPos += cameraSpeed * cameraMove * (float)gameTime.ElapsedGameTime.Ticks / TimeSpan.TicksPerSecond;
+			CameraPos.X = MathHelper.Clamp(CameraPos.X, 0, World.Size);
+			CameraPos.Y = MathHelper.Clamp(CameraPos.Y, 0, World.Size);
 
 			var curTool = GetTool(ActiveTool);
 			if (curTool != null)
@@ -152,9 +198,11 @@ namespace Seed
 			}
 		}
 
-		public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
+		public void Draw(GameTime gameTime, SpriteBatch spriteBatch, GraphicsDevice graphics )
 		{
+			graphics.SetRenderTarget(_worldRenderTarget);
 			World.Draw(gameTime, spriteBatch, ShowLayers, whiteTex);
+
 
 			World.State state = World.States[World.NextRenderStateIndex];
 
@@ -163,9 +211,15 @@ namespace Seed
 			{
 				curTool.DrawWorld(spriteBatch, state);
 			}
+			graphics.SetRenderTarget(null);
 
 			spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
+			Vector2 cameraPos = new Vector2(CameraPos.X * World.tileRenderSize, CameraPos.Y * World.tileRenderSize);
+
+			spriteBatch.Draw(_worldRenderTarget, new Rectangle((int)(graphics.Viewport.Width/2-cameraPos.X*Zoom), (int)(graphics.Viewport.Height / 2 - cameraPos.Y * Zoom), (int)(Zoom*_worldRenderTarget.Width), (int)(Zoom*_worldRenderTarget.Height)), null, Color.White);
+
 			spriteBatch.Draw(whiteTex, new Rectangle(0, 0, 150, 15 * LayerDisplayKeys.Count + 20), null, Color.Black * 0.5f);
+
 			int textY = 5;
 
 			for (int i=0;i<Tools.Count;i++)
