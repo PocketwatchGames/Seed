@@ -16,6 +16,7 @@ namespace Seed
 		MouseState _lastMouseState;
 		List<float> _timeScales = new List<float> { 0, 5, 20, 100 };
 		int _timeScaleIndex = 0;
+		Point viewport;
 
 		RenderTarget2D _worldRenderTarget;
 
@@ -65,6 +66,8 @@ namespace Seed
 
 		public void LoadContent(GraphicsDevice graphics, ContentManager content)
 		{
+			viewport = new Point(graphics.Viewport.Width, graphics.Viewport.Height);
+
 			Font = content.Load<SpriteFont>("fonts/infofont");
 			whiteTex = new Texture2D(graphics, 1, 1);
 			Color[] c = new Color[] { Color.White };
@@ -84,8 +87,7 @@ namespace Seed
 
 		Point ScreenToWorld(Point screenPoint)
 		{
-			Vector2 cameraPos = new Vector2((CameraPos.X * World.tileRenderSize) / Zoom, (CameraPos.Y * World.tileRenderSize) / Zoom);
-			return new Point(MathHelper.Clamp((int)(screenPoint.X / Zoom), 0, World.Size - 1), MathHelper.Clamp((int)(screenPoint.Y / Zoom), 0, World.Size - 1));
+			return new Point((int)MathHelper.Clamp((screenPoint.X - viewport.X / 2) / (Zoom * World.tileRenderSize) + CameraPos.X, 0, World.Size - 1), (int)MathHelper.Clamp((screenPoint.Y - viewport.Y / 2) / (Zoom * World.tileRenderSize) + CameraPos.Y, 0, World.Size - 1));
 		}
 		public void Update(GameTime gameTime)
 		{
@@ -216,7 +218,7 @@ namespace Seed
 			spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
 			Vector2 cameraPos = new Vector2(CameraPos.X * World.tileRenderSize, CameraPos.Y * World.tileRenderSize);
 
-			spriteBatch.Draw(_worldRenderTarget, new Rectangle((int)(graphics.Viewport.Width/2-cameraPos.X*Zoom), (int)(graphics.Viewport.Height / 2 - cameraPos.Y * Zoom), (int)(Zoom*_worldRenderTarget.Width), (int)(Zoom*_worldRenderTarget.Height)), null, Color.White);
+			spriteBatch.Draw(_worldRenderTarget, new Rectangle((int)(viewport.X/2-cameraPos.X*Zoom), (int)(viewport.Y / 2 - cameraPos.Y * Zoom), (int)(Zoom*_worldRenderTarget.Width), (int)(Zoom*_worldRenderTarget.Height)), null, Color.White);
 
 			spriteBatch.Draw(whiteTex, new Rectangle(0, 0, 150, 15 * LayerDisplayKeys.Count + 20), null, Color.Black * 0.5f);
 
