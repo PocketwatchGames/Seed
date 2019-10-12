@@ -39,6 +39,7 @@ namespace Seed
 			spriteBatch.DrawString(gui.Font, "WaterTableDepth: " + (int)state.WaterTableDepth[index], new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "GroundWater: " + state.GroundWater[index].ToString("0.00"), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "SurfaceWater: " + state.SurfaceWater[index].ToString("0.00"), new Vector2(5, textY += 15), Color.White);
+			spriteBatch.DrawString(gui.Font, "SurfaceIce: " + state.SurfaceIce[index].ToString("0.00"), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "SoilFertility: " + (int)(state.SoilFertility[index] * 100), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "Canopy: " + (int)(state.Canopy[index] * 100), new Vector2(5, textY += 15), Color.White);
 			//	spriteBatch.DrawString(font, "Wind: " + Wind[index], new Vector2(5, textY += 15), Color.White);

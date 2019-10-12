@@ -57,6 +57,7 @@ namespace Seed
 
 						Color color = Color.White;
 						float elevation = state.Elevation[index];
+						float ice = state.SurfaceIce[index];
 						float normalizedElevation = (elevation - MinElevation) / (MaxElevation - MinElevation);
 						bool drawOcean = elevation <= state.SeaLevel && showLayers.HasFlag(Layers.Water);
 
@@ -71,6 +72,10 @@ namespace Seed
 							else
 							{
 								color = Color.Blue;
+							}
+							if (ice > 0)
+							{
+								color = Color.Lerp(color, Color.LightSteelBlue, Math.Min(1.0f, ice / maxIce));
 							}
 						}
 						else
@@ -98,6 +103,7 @@ namespace Seed
 							}
 						}
 
+
 						if (showLayers.HasFlag(Layers.TemperatureSubtle))
 						{
 							float temperature = state.Temperature[index];
@@ -117,11 +123,17 @@ namespace Seed
 						if (showLayers.HasFlag(Layers.Water))
 						{
 							float sw = MathUtils.Lerp(lastState.SurfaceWater[index], state.SurfaceWater[index], stateLerpT);
-							if (sw > 0)
+							if (sw > 0 || ice > 0)
 							{
-								int width = (int)(Math.Min(1.0f, sw) * (tileRenderSize - 2));
+								int width = (int)(Math.Min(1.0f, sw+ice) * (tileRenderSize - 2));
 								Rectangle surfaceWaterRect = new Rectangle(x * tileRenderSize + 1, y * tileRenderSize + 1, width, width);
-								spriteBatch.Draw(whiteTex, surfaceWaterRect, Color.Lerp(Color.Blue, Color.Teal, (elevation - state.SeaLevel) / (MaxElevation - state.SeaLevel)) * 0.75f);
+								Color waterColor = Color.Lerp(Color.Blue, Color.Teal, (elevation - state.SeaLevel) / (MaxElevation - state.SeaLevel));
+								if (ice > 0)
+								{
+									waterColor = Color.Lerp(waterColor, Color.LightSteelBlue, Math.Min(1.0f, ice / maxIce));
+								}
+
+								spriteBatch.Draw(whiteTex, surfaceWaterRect, waterColor * 0.75f);
 							}
 						}
 
@@ -215,14 +227,15 @@ namespace Seed
 							else if (showLayers.HasFlag(Layers.CloudCoverage))
 							{
 								float minCloudsToDraw = 0.01f;
-								float maxCloudsToDraw = 1.0f;
+								float maxCloudsWidth = 0.5f;
+								float maxCloudsToDraw = 3.0f;
 								float cloudCover = (float)MathHelper.Clamp(state.CloudCover[index] - minCloudsToDraw, 0.0f, maxCloudsToDraw);
 								if (cloudCover > 0)
 								{
 									float normalizedCloudCover = cloudCover / maxCloudsToDraw;
-									int width = (int)(normalizedCloudCover * tileRenderSize);
+									int width = (int)(Math.Sqrt(Math.Min(1.0f, cloudCover / maxCloudsWidth) * tileRenderSize));
 									Rectangle rect = new Rectangle(x * tileRenderSize, y * tileRenderSize, width, width);
-									spriteBatch.Draw(whiteTex, rect, Color.Lerp(Color.White, Color.Black, normalizedCloudCover));
+									spriteBatch.Draw(whiteTex, rect, Color.Lerp(Color.White, Color.Black, normalizedCloudCover)* (float)Math.Sqrt(normalizedCloudCover) * 0.9f);
 								}
 							}
 							if (showLayers.HasFlag(Layers.Wind))

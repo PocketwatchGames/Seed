@@ -50,11 +50,11 @@ namespace Seed
 		public const float localSunHeat = 5; // sun can add about 10 degrees farenheit
 
 
-		public float heatLoss = 0.0002f; // how fast a cell loses heat an min elevation, no cloud cover
-		public float heatGainFromSun = 25.0f / TicksPerYear; // how fast a cell gains heat with no cloud cover, modified by sun height
+		public float heatLoss = 0.00015f; // how fast a cell loses heat an min elevation, no cloud cover
+		public float heatGainFromSun = 20.0f / TicksPerYear; // how fast a cell gains heat with no cloud cover, modified by sun height
 		public float heatReflectionWater = 0.0f; // How much heat is reflected back by the water
 		public float heatReflectionIce = 0.5f; // How much heat is reflected back by the water
-		public float HeatReflectionLand = 0.05f;
+		public float HeatReflectionLand = 0.1f;
 		public float heatLossPreventionCarbonDioxide = 200;
 		public float cloudContentFullAbsorption = 5.0f; // how much heat gain/loss is caused by cloud cover
 		public float cloudAbsorptionRate = 0.06f; // 6% absorbed by clouds
@@ -83,6 +83,9 @@ namespace Seed
 		public const float MaxTropopauseElevation = 17000f;
 		public const float MinTropopauseElevation = 9000f;
 		public const float TropopauseElevationSeason = 1000f;
+		public const float maxIce = 2.0f;
+		public const float iceFreezeRate = 10.0f / TicksPerYear;
+		public const float iceMeltRate = 10.0f / TicksPerYear;
 
 	}
 }
