@@ -128,43 +128,45 @@ namespace Seed
 		{
 			TimeTillTick -= TimeScale * (float)gameTime.ElapsedGameTime.Ticks / TimeSpan.TicksPerSecond;
 
-			if (_simTask != null)
+			if (TimeTillTick <= 0)
 			{
-				_simTask.Wait();
-			}
-
-			_simTask = Task.Run(() =>
-			{
-				lock (InputLock)
+				if (_simTask != null)
 				{
-					while (TimeTillTick <= 0)
-					{
-						TimeTillTick += TicksPerSecond;
-						int nextStateIndex = (CurStateIndex+1) % StateCount;
-						while (nextStateIndex == LastRenderStateIndex || nextStateIndex == NextRenderStateIndex)
-						{
-							nextStateIndex = (nextStateIndex + 1) % StateCount;
-						}
+					_simTask.Wait();
+				}
 
-						Tick(States[CurStateIndex], States[nextStateIndex]);
+				_simTask = Task.Run(() =>
+				{
+					lock (InputLock)
+					{
+						bool didATick = false;
+						while (TimeTillTick <= 0)
+						{
+							TimeTillTick += TicksPerSecond;
+							int nextStateIndex = (CurStateIndex + 1) % StateCount;
+							while (nextStateIndex == LastRenderStateIndex || nextStateIndex == NextRenderStateIndex)
+							{
+								nextStateIndex = (nextStateIndex + 1) % StateCount;
+							}
+
+							Tick(States[CurStateIndex], States[nextStateIndex]);
 
 						// TODO: why can't i edit this in the tick call?  it's a class, so it should be pass by reference?
-						States[nextStateIndex].Ticks++;
-						CurStateIndex = nextStateIndex;
-
+							States[nextStateIndex].Ticks = States[CurStateIndex].Ticks+1;
+							CurStateIndex = nextStateIndex;
+							didATick = true;
+						}
+						if (didATick)
+						{
+							lock (DrawLock)
+							{
+								LastRenderStateIndex = NextRenderStateIndex;
+								NextRenderStateIndex = CurStateIndex;
+							}
+						}
 					}
-				}
-				lock (DrawLock)
-				{
-					if (States[CurStateIndex].Ticks < States[NextRenderStateIndex].Ticks)
-					{
-						TimeTillTick = 0;
-					}
-
-					LastRenderStateIndex = NextRenderStateIndex;
-					NextRenderStateIndex = CurStateIndex;
-				}
-			});
+				});
+			}
 		}
 
 		public int GetIndex(int x, int y)

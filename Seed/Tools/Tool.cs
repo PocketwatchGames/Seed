@@ -29,6 +29,7 @@ namespace Seed
 			int index = gui.World.GetIndex(gui.TileInfoPoint.X, gui.TileInfoPoint.Y);
 			int textY = 300;
 
+			spriteBatch.DrawString(gui.Font, "Index: " + index, new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "Elevation: " + (int)(state.Elevation[index]), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "Temperature: " + (int)(state.Temperature[index] - World.FreezingTemperature), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "Pressure: " + (state.Pressure[index] / World.StaticPressure).ToString("0.00"), new Vector2(5, textY += 15), Color.White);
