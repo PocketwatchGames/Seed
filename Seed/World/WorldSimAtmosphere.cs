@@ -45,7 +45,7 @@ namespace Seed
 			for (int y = 0; y < Size; y++)
 			{
 				float latitude = GetLatitude(y);
-				var sunVector = GetSunAngle(state.Ticks, latitude);
+				var sunVector = GetSunVector(state.Ticks, latitude);
 				float sunAngle = Math.Max(0, sunVector.Z);
 
 				for (int x = 0; x < Size; x++)
@@ -81,9 +81,9 @@ namespace Seed
 					float atmosphereMass = GetAtmosphereMass(elevation, elevationOrSeaLevel);
 					Vector3 windAtSurface = GetWindAtElevation(state, elevationOrSeaLevel, elevationOrSeaLevel, index, latitude, terrainNormal);
 					float windSpeedAtSurface = windAtSurface.Length();
-					float airPressureInverse = StaticPressure / pressure;
-					float tempWithSunAtGround = temperature + (1.0f - Math.Min(cloudCover / cloudContentFullAbsorption, 1.0f)) * sunAngle * localSunHeat;
-					float evapRate = GetEvaporationRate(surfaceIce, tempWithSunAtGround, humidity, atmosphereMass, windSpeedAtSurface, airPressureInverse, sunAngle);
+					float airPressureInverse = Data.StaticPressure / pressure;
+					float tempWithSunAtGround = GetLocalTemperature(sunAngle, cloudCover, temperature);
+					float evapRate = GetEvaporationRate(surfaceIce, tempWithSunAtGround, humidity, windSpeedAtSurface, cloudElevation, elevationOrSeaLevel);
 
 					UpdateTemperature(state.SeaLevel, elevation, surfaceIce, cloudCover, temperature, terrainNormal, humidity, atmosphereMass, sunAngle, sunVector, airPressureInverse, ref newTemperature);
 					MoveAtmosphereOnWind(state, x, y, temperature, humidity, windAtSurface, ref newHumidity, ref newTemperature);
@@ -91,12 +91,12 @@ namespace Seed
 					FlowWater(state, x, y, gradient, soilFertility, ref newSurfaceWater, ref newGroundWater);
 					SeepWaterIntoGround(elevation, state.SeaLevel, soilFertility, waterTableDepth, ref newGroundWater, ref newSurfaceWater);
 					EvaporateWater(evapRate, elevation, state.SeaLevel, groundWater, waterTableDepth, ref newHumidity, ref newTemperature, ref newGroundWater, ref newSurfaceWater, out newEvaporation);
-					MoveHumidityToClouds(elevation, humidity, cloudElevation, windAtSurface, ref newHumidity, ref newCloudCover);
+		//			MoveHumidityToClouds(elevation, humidity, tempWithSunAtGround, cloudElevation, windAtSurface, ref newHumidity, ref newCloudCover);
 					if (cloudCover > 0)
 					{
 						var windAtCloudElevation = GetWindAtElevation(state, cloudElevation, elevationOrSeaLevel, index, latitude, terrainNormal);
 						UpdateCloudElevation(elevationOrSeaLevel, temperature, humidity, atmosphereMass, windAtCloudElevation, ref newCloudElevation);
-						MoveClouds(nextState, x, y, windAtCloudElevation, cloudCover, ref newCloudCover);
+						MoveClouds(state, x, y, windAtCloudElevation, cloudCover, ref newCloudCover);
 						rainfall = UpdateRainfall(state, elevation, cloudCover, temperature, cloudElevation, ref newSurfaceWater, ref newCloudCover);
 					}
 
@@ -119,9 +119,14 @@ namespace Seed
 
 		}
 
+		private float GetLocalTemperature(float sunAngle, float cloudCover, float temperature)
+		{
+			return temperature + (1.0f - Math.Min(cloudCover / Data.cloudContentFullAbsorption, 1.0f)) * sunAngle * Data.localSunHeat;
+		}
+
 		Vector3 GetWindAtElevation(State state, float windElevation, float landElevation, int index, float latitude, Vector3 normal)
 		{
-			float tropopauseElevation = (1.0f - Math.Abs(latitude)) * (MaxTropopauseElevation - MinTropopauseElevation) + MinTropopauseElevation + TropopauseElevationSeason * latitude * (GetTimeOfYear(state.Ticks) * 2 - 1);
+			float tropopauseElevation = (1.0f - Math.Abs(latitude)) * (Data.MaxTropopauseElevation - Data.MinTropopauseElevation) + Data.MinTropopauseElevation + Data.TropopauseElevationSeason * latitude * (GetTimeOfYear(state.Ticks) * 2 - 1);
 			float hadleyCellHeight = Math.Min(1.0f, (windElevation - landElevation) / (tropopauseElevation - landElevation));
 
 			Vector3 wind = Vector3.Zero;
@@ -151,7 +156,7 @@ namespace Seed
 			{
 				wind.Z *= hadleyCellHeight;
 			}
-			wind *= tradeWindSpeed;
+			wind *= Data.tradeWindSpeed;
 
 
 			const float windElevationFactor = 1.0f / 2000;
@@ -182,17 +187,17 @@ namespace Seed
 			// https://en.wikipedia.org/wiki/Barometric_formula
 			// For the bottom layer of atmosphere ( < 11000 meters), ElevationAtBottomOfAtmLayer == 0)
 
-			float standardPressure = StaticPressure * (float)Math.Pow(StdTemp / (StdTemp + StdTempLapseRate * elevation), PressureExponent);
+			float standardPressure = Data.StaticPressure * (float)Math.Pow(Data.StdTemp / (Data.StdTemp + Data.StdTempLapseRate * elevation), Data.PressureExponent);
 
-			float pressure = standardPressure - verticalWindPressureAdjustment * state.Wind[index].Z + temperatureGradientPressureAdjustment * temperatureDifferential;
+			float pressure = standardPressure - Data.verticalWindPressureAdjustment * state.Wind[index].Z + Data.temperatureGradientPressureAdjustment * temperatureDifferential;
 			return pressure;
 		}
 
 
-		Vector3 GetSunAngle(int ticks, float latitude)
+		Vector3 GetSunVector(int ticks, float latitude)
 		{
 
-			float angleOfInclination = planetTiltAngle * (float)Math.Sin(Math.PI * 2 * (GetTimeOfYear(ticks) - 0.25f));
+			float angleOfInclination = Data.planetTiltAngle * (float)Math.Sin(Math.PI * 2 * (GetTimeOfYear(ticks) - 0.25f));
 			//float timeOfDay = (-sunPhase + 0.5f) * Math.PI * 2;
 			float timeOfDay = (float)0;
 			float azimuth = (float)Math.Atan2(Math.Sin(timeOfDay), Math.Cos(timeOfDay) * Math.Sin(latitude * Math.PI) - Math.Tan(angleOfInclination) * Math.Cos(latitude * Math.PI));
@@ -205,47 +210,72 @@ namespace Seed
 
 
 
-		private static void MoveHumidityToClouds(float elevation, float humidity, float cloudElevation, Vector3 windAtSurface, ref float newHumidity, ref float newCloudCover)
+		private void MoveHumidityToClouds(float elevationOrSeaLevel, float humidity, float localTemperature, float cloudElevation, Vector3 windAtSurface, ref float newHumidity, ref float newCloudCover)
 		{
-			float humidityToCloud = MathHelper.Clamp((humidityCloudAbsorptionRate + windAtSurface.Z * humidityToCloudWindSpeed) * humidity / Math.Max(1.0f, cloudElevation - elevation), 0, humidity);
+			float humidityToCloud = MathHelper.Clamp(windAtSurface.Z / cloudElevation + Math.Max(0, 1.0f - GetRelativeHumidity(localTemperature, humidity, cloudElevation, elevationOrSeaLevel)), 0, humidity);
 			newHumidity -= humidityToCloud;
 			newCloudCover += humidityToCloud;
 		}
 
 		private void UpdateCloudElevation(float elevationOrSeaLevel, float temperature, float humidity, float atmosphereMass, Vector3 windAtCloudElevation, ref float newCloudElevation)
 		{
-			float dewPointTemp = (float)Math.Pow(humidity / (dewPointRange * atmosphereMass), 0.25f) * dewPointTemperatureRange + dewPointZero;
-			float dewPointElevation = Math.Max(0, (dewPointTemp - temperature) / temperatureLapseRate) + elevationOrSeaLevel;
+			float dewPointTemp = (float)Math.Pow(humidity / (Data.dewPointRange * atmosphereMass), 0.25f) * Data.dewPointTemperatureRange + Data.dewPointZero;
+			float dewPointElevation = Math.Max(0, (dewPointTemp - temperature) / Data.temperatureLapseRate) + elevationOrSeaLevel;
 
 			float desiredDeltaZ = dewPointElevation - newCloudElevation;
-			newCloudElevation = newCloudElevation + desiredDeltaZ* cloudElevationDeltaSpeed + windAtCloudElevation.Z * windVerticalCloudSpeedMultiplier;
+			newCloudElevation = newCloudElevation + desiredDeltaZ* Data.cloudElevationDeltaSpeed + windAtCloudElevation.Z * Data.windVerticalCloudSpeedMultiplier;
 			newCloudElevation = Math.Max(newCloudElevation, elevationOrSeaLevel);
 		}
 
-		private void MoveClouds(State nextState, int x, int y, Vector3 windAtCloudElevation, float cloudCover, ref float newCloudCover)
+		private void MoveClouds(State state, int x, int y, Vector3 windAtCloudElevation, float cloudCover, ref float newCloudCover)
 		{
 			if (cloudCover > 0)
 			{
 				if (windAtCloudElevation.X != 0 || windAtCloudElevation.Y != 0)
 				{
-					float windXPercent = Math.Abs(windAtCloudElevation.X) / (Math.Abs(windAtCloudElevation.X) + Math.Abs(windAtCloudElevation.Y));
-					float cloudMove = Math.Min(cloudCover, Math.Abs(windAtCloudElevation.X) + Math.Abs(windAtCloudElevation.Y)) * cloudMovementFromWind;
+					float cloudMove = Math.Min(cloudCover, (Math.Abs(windAtCloudElevation.X) + Math.Abs(windAtCloudElevation.Y)) * Data.cloudMovementFromWind);
 					newCloudCover -= cloudMove;
-					if (windAtCloudElevation.X > 0)
+
+					for (int i = 0; i < 4; i++)
 					{
-						nextState.CloudCover[GetIndex(WrapX(x + 1), y)] += cloudMove * windXPercent;
-					}
-					else
-					{
-						nextState.CloudCover[GetIndex(WrapX(x - 1), y)] += cloudMove * windXPercent;
-					}
-					if (windAtCloudElevation.Y > 0)
-					{
-						nextState.CloudCover[GetIndex(x, WrapY(y + 1))] += cloudMove * (1.0f - windXPercent);
-					}
-					else
-					{
-						nextState.CloudCover[GetIndex(x, WrapY(y - 1))] += cloudMove * (1.0f - windXPercent);
+						var neighborPoint = GetNeighbor(x, y, i);
+						int neighborIndex = GetIndex(neighborPoint.X, neighborPoint.Y);
+						float nCloudCover = state.CloudCover[neighborIndex];
+						if (nCloudCover > 0)
+						{
+							var nWindAtCloudElevation = GetWindAtElevation(state, state.CloudElevation[neighborIndex], Math.Max(state.SeaLevel, state.Elevation[neighborIndex]), neighborIndex, GetLatitude(y), state.Normal[neighborIndex]);
+							switch (i)
+							{
+								case 0:
+									if (nWindAtCloudElevation.X > 0)
+									{
+										float nCloudMove = Math.Min(nCloudCover, (Math.Abs(nWindAtCloudElevation.X) + Math.Abs(nWindAtCloudElevation.Y)) * Data.cloudMovementFromWind);
+										newCloudCover += nCloudMove * nWindAtCloudElevation.X / (Math.Abs(nWindAtCloudElevation.X) + Math.Abs(nWindAtCloudElevation.Y));
+									}
+									break;
+								case 1:
+									if (nWindAtCloudElevation.X < 0)
+									{
+										float nCloudMove = Math.Min(nCloudCover, (Math.Abs(nWindAtCloudElevation.X) + Math.Abs(nWindAtCloudElevation.Y)) * Data.cloudMovementFromWind);
+										newCloudCover += nCloudMove * -nWindAtCloudElevation.X / (Math.Abs(nWindAtCloudElevation.X) + Math.Abs(nWindAtCloudElevation.Y));
+									}
+									break;
+								case 2:
+									if (nWindAtCloudElevation.Y < 0)
+									{
+										float nCloudMove = Math.Min(nCloudCover, (Math.Abs(nWindAtCloudElevation.X) + Math.Abs(nWindAtCloudElevation.Y)) * Data.cloudMovementFromWind);
+										newCloudCover += nCloudMove * -nWindAtCloudElevation.Y / (Math.Abs(nWindAtCloudElevation.X) + Math.Abs(nWindAtCloudElevation.Y));
+									}
+									break;
+								case 3:
+									if (nWindAtCloudElevation.Y > 0)
+									{
+										float nCloudMove = Math.Min(nCloudCover, (Math.Abs(nWindAtCloudElevation.X) + Math.Abs(nWindAtCloudElevation.Y)) * Data.cloudMovementFromWind);
+										newCloudCover += nCloudMove * nWindAtCloudElevation.Y / (Math.Abs(nWindAtCloudElevation.X) + Math.Abs(nWindAtCloudElevation.Y));
+									}
+									break;
+							}
+						}
 					}
 				}
 
@@ -255,11 +285,11 @@ namespace Seed
 
 		private float UpdateRainfall(State state, float elevation, float cloudCover, float temperature, float cloudElevation, ref float newSurfaceWater, ref float newCloudCover)
 		{
-			float temperatureAtCloudElevation = cloudElevation * temperatureLapseRate + temperature;
-			float rainPoint = Math.Max(0, (temperatureAtCloudElevation - dewPointZero) * rainPointTemperatureMultiplier);
+			float temperatureAtCloudElevation = cloudElevation * Data.temperatureLapseRate + temperature;
+			float rainPoint = Math.Max(0, (temperatureAtCloudElevation - Data.dewPointZero) * Data.rainPointTemperatureMultiplier);
 			if (cloudCover > rainPoint)
 			{
-				float rainfall = (cloudCover - rainPoint) * RainfallRate;
+				float rainfall = (cloudCover - rainPoint) * Data.RainfallRate;
 				newCloudCover -= rainfall;
 				if (elevation > state.SeaLevel)
 				{
@@ -273,8 +303,8 @@ namespace Seed
 		private void FlowWater(State state, int x, int y, Vector2 gradient, float soilFertility, ref float surfaceWater, ref float groundWater)
 		{
 			float flow = Math.Min(surfaceWater, (Math.Abs(gradient.X) + Math.Abs(gradient.Y)));
-			surfaceWater = Math.Max(surfaceWater - flow * FlowSpeed, 0);
-			groundWater = Math.Max(groundWater - GroundWaterFlowSpeed * soilFertility, 0);
+			surfaceWater = Math.Max(surfaceWater - flow * Data.FlowSpeed, 0);
+			groundWater = Math.Max(groundWater - Data.GroundWaterFlowSpeed * soilFertility, 0);
 
 
 			for (int i = 0; i < 4; i++)
@@ -286,32 +316,32 @@ namespace Seed
 				if (nWater > 0)
 				{
 					var nGradient = state.FlowDirection[neighborIndex];
-					var nGroundFlow = GroundWaterFlowSpeed * state.SoilFertility[neighborIndex];
+					var nGroundFlow = Data.GroundWaterFlowSpeed * state.SoilFertility[neighborIndex];
 					switch (i)
 					{
 						case 0:
 							if (nGradient.X > 0)
 							{
-								surfaceWater += nGradient.X * nWater * FlowSpeed;
+								surfaceWater += nGradient.X * nWater * Data.FlowSpeed;
 								groundWater += nGroundWater * nGroundFlow;
 							}
 							break;
 						case 1:
 							if (nGradient.X < 0)
 							{
-								surfaceWater += nGradient.X * nWater * FlowSpeed;
+								surfaceWater += nGradient.X * nWater * Data.FlowSpeed;
 							}
 							break;
 						case 2:
 							if (nGradient.Y < 0)
 							{
-								surfaceWater += nGradient.X * nWater * FlowSpeed;
+								surfaceWater += nGradient.X * nWater * Data.FlowSpeed;
 							}
 							break;
 						case 3:
 							if (nGradient.Y > 0)
 							{
-								surfaceWater += nGradient.X * nWater * FlowSpeed;
+								surfaceWater += nGradient.X * nWater * Data.FlowSpeed;
 							}
 							break;
 					}
@@ -323,9 +353,9 @@ namespace Seed
 
 		private void SimulateIce(float elevation, float seaLevel, float localTemperature, ref float surfaceWater, ref float surfaceIce)
 		{
-			if (localTemperature <= FreezingTemperature)
+			if (localTemperature <= Data.FreezingTemperature)
 			{
-				float frozen = iceFreezeRate * (FreezingTemperature - localTemperature) * (1.0f - (float)Math.Pow(Math.Min(1.0f, surfaceIce / maxIce), 2));
+				float frozen = Data.iceFreezeRate * (Data.FreezingTemperature - localTemperature) * (1.0f - (float)Math.Pow(Math.Min(1.0f, surfaceIce / Data.maxIce), 2));
 				if (elevation > seaLevel)
 				{
 					frozen = Math.Min(frozen, surfaceWater);
@@ -334,7 +364,7 @@ namespace Seed
 				surfaceIce += frozen;
 			} else if (surfaceIce > 0)
 			{
-				float meltRate = (localTemperature - FreezingTemperature) * iceMeltRate;
+				float meltRate = (localTemperature - Data.FreezingTemperature) * Data.iceMeltRate;
 				float melted = Math.Min(surfaceIce, meltRate);
 				surfaceIce -= melted;
 				if (elevation > seaLevel)
@@ -345,10 +375,10 @@ namespace Seed
 		}
 		private void SeepWaterIntoGround(float elevation, float seaLevel, float soilFertility, float waterTableDepth, ref float groundWater, ref float surfaceWater)
 		{
-			float maxGroundWater = soilFertility * waterTableDepth * MaxSoilPorousness;
+			float maxGroundWater = soilFertility * waterTableDepth * Data.MaxSoilPorousness;
 			if (elevation > seaLevel)
 			{
-				float seepage = Math.Min(surfaceWater * soilFertility * GroundWaterReplenishmentSpeed, maxGroundWater - groundWater);
+				float seepage = Math.Min(surfaceWater * soilFertility * Data.GroundWaterReplenishmentSpeed, maxGroundWater - groundWater);
 				groundWater += seepage;
 				surfaceWater -= seepage;
 			}
@@ -359,17 +389,28 @@ namespace Seed
 			}
 		}
 
-		private float GetEvaporationRate(float ice, float localTemperature, float humidity, float atmosphereMass, float windSpeedAtSurface, float airPressureInverse, float sunAngle)
+		private float GetEvaporationRate(float ice, float localTemperature, float humidity, float windSpeedAtSurface, float cloudElevation, float elevationOrSeaLevel)
 		{
 			if (ice > 0)
 			{
 				return 0;
 			}
-			float evapTemperature = 1.0f - MathHelper.Clamp((localTemperature - evapMinTemperature) / evapTemperatureRange, 0, 1);
-			float evapRate = EvapRateTemperature * (1.0f - evapTemperature * evapTemperature);
-			evapRate += EvapRateWind * windSpeedAtSurface;
-			evapRate *= airPressureInverse * MathHelper.Clamp(1.0f - (humidity * airPressureInverse / (dewPointRange * atmosphereMass)), 0, 1);
+			float evapTemperature = 1.0f - MathHelper.Clamp((localTemperature - Data.evapMinTemperature) / Data.evapTemperatureRange, 0, 1);
+			float evapRate = Data.EvapRateTemperature * (1.0f - evapTemperature * evapTemperature);
+			evapRate += Data.EvapRateWind * windSpeedAtSurface;
+
+			float relativeHumidity = GetRelativeHumidity(localTemperature, humidity, cloudElevation, elevationOrSeaLevel);
+
+			evapRate *= Math.Max(0.0f, 1.0f - relativeHumidity);
 			return evapRate;
+		}
+
+		private float GetRelativeHumidity(float localTemperature, float humidity, float cloudElevation, float elevationOrSeaLevel)
+		{
+			float atmosphereMass = (cloudElevation - elevationOrSeaLevel) * Data.MolarMassEarthAir;
+			float maxHumidity = atmosphereMass * Data.dewPointRange * MathHelper.Clamp((localTemperature - Data.dewPointZero) / Data.dewPointTemperatureRange, 0, 1);
+			float relativeHumidity = humidity / maxHumidity;
+			return relativeHumidity;
 		}
 
 		private void EvaporateWater(float evapRate, float elevation, float seaLevel, float groundWater, float waterTableDepth, ref float humidity, ref float temperature, ref float newGroundWater, ref float surfaceWater, out float evaporation)
@@ -400,7 +441,7 @@ namespace Seed
 				evaporation += groundWaterEvap;
 			}
 
-			temperature -= evaporation * EvaporativeCoolingRate;
+			temperature -= evaporation * Data.EvaporativeCoolingRate;
 		}
 
 		private void MoveAtmosphereOnWind(State state, int x, int y, float temperature, float humidity, Vector3 windAtSurface, ref float newHumidity, ref float newTemperature)
@@ -408,11 +449,11 @@ namespace Seed
 			// in high pressure systems, air from the upper atmosphere will cool us
 			if (windAtSurface.Z < 0)
 			{
-				newTemperature += upperAtmosphereCoolingRate * windAtSurface.Z;
+				newTemperature += Data.upperAtmosphereCoolingRate * windAtSurface.Z;
 			}
 			if (windAtSurface.X != 0 || windAtSurface.Y != 0)
 			{
-				newHumidity -= humidity * Math.Min(1.0f, (Math.Abs(windAtSurface.X) + Math.Abs(windAtSurface.Y)) * humidityLossFromWind);
+				newHumidity = Math.Max(0, newHumidity - humidity * Math.Min(1.0f, (Math.Abs(windAtSurface.X) + Math.Abs(windAtSurface.Y)) * Data.humidityLossFromWind));
 			}
 			for (int i = 0; i < 4; i++)
 			{
@@ -425,32 +466,32 @@ namespace Seed
 						if (neighborWind.X > 0)
 						{
 							float absX = Math.Abs(neighborWind.X);
-							newTemperature += (state.Temperature[nIndex] - temperature) * Math.Min(1.0f, absX * temperatureLossFromWind);
-							newHumidity += state.Humidity[nIndex] * absX * humidityLossFromWind;
+							newTemperature += (state.Temperature[nIndex] - temperature) * Math.Min(1.0f, absX * Data.temperatureLossFromWind);
+							newHumidity += state.Humidity[nIndex] * absX * Data.humidityLossFromWind;
 						}
 						break;
 					case 1:
 						if (neighborWind.X < 0)
 						{
 							float absX = Math.Abs(neighborWind.X);
-							newTemperature += (state.Temperature[nIndex] - temperature) * Math.Min(1.0f, absX * temperatureLossFromWind);
-							newHumidity += state.Humidity[nIndex] * absX * humidityLossFromWind;
+							newTemperature += (state.Temperature[nIndex] - temperature) * Math.Min(1.0f, absX * Data.temperatureLossFromWind);
+							newHumidity += state.Humidity[nIndex] * absX * Data.humidityLossFromWind;
 						}
 						break;
 					case 2:
 						if (neighborWind.Y < 0)
 						{
 							float absY = Math.Abs(neighborWind.Y);
-							newTemperature += (state.Temperature[nIndex] - temperature) * Math.Min(1.0f, absY * temperatureLossFromWind);
-							newHumidity += state.Humidity[nIndex] * absY * humidityLossFromWind;
+							newTemperature += (state.Temperature[nIndex] - temperature) * Math.Min(1.0f, absY * Data.temperatureLossFromWind);
+							newHumidity += state.Humidity[nIndex] * absY * Data.humidityLossFromWind;
 						}
 						break;
 					case 3:
 						if (neighborWind.Y > 0)
 						{
 							float absY = Math.Abs(neighborWind.Y);
-							newTemperature += (state.Temperature[nIndex] - temperature) * Math.Min(1.0f, absY * temperatureLossFromWind);
-							newHumidity += state.Humidity[nIndex] * absY * humidityLossFromWind;
+							newTemperature += (state.Temperature[nIndex] - temperature) * Math.Min(1.0f, absY * Data.temperatureLossFromWind);
+							newHumidity += state.Humidity[nIndex] * absY * Data.humidityLossFromWind;
 						}
 						break;
 				}				
@@ -461,14 +502,14 @@ namespace Seed
 		{
 
 			// TEMPERATURE
-			float cloudMass = Math.Min(1.0f, cloudCover / cloudContentFullAbsorption);
-			float cloudAbsorptionFactor = cloudAbsorptionRate * cloudMass;
-			float cloudReflectionFactor = cloudReflectionRate * cloudMass;
+			float cloudMass = Math.Min(1.0f, cloudCover / Data.cloudContentFullAbsorption);
+			float cloudAbsorptionFactor = Data.cloudAbsorptionRate * cloudMass;
+			float cloudReflectionFactor = Data.cloudReflectionRate * cloudMass;
 			float humidityPercentage = humidity / atmosphereMass;
 
 
-			float heatLossFactor = (1.0f - carbonDioxide * heatLossPreventionCarbonDioxide) * (1.0f - humidityPercentage);
-			float loss = temperature * (1.0f - cloudReflectionFactor) * (heatLoss * heatLossFactor * airPressureInverse);
+			float heatLossFactor = (1.0f - Data.carbonDioxide * Data.heatLossPreventionCarbonDioxide) * (1.0f - humidityPercentage);
+			float loss = temperature * (1.0f - cloudReflectionFactor) * (Data.heatLoss * heatLossFactor * airPressureInverse);
 			//		float cloudLoss = 0;
 			float gain = 0;
 			float cloudGain = 0;
@@ -476,26 +517,26 @@ namespace Seed
 			float reflection = 0;
 			if (sunAngle > 0)
 			{
-				cloudGain = sunAngle * heatGainFromSun * cloudAbsorptionFactor;
-				cloudReflection = sunAngle * heatGainFromSun * cloudReflectionFactor;
+				cloudGain = sunAngle * Data.heatGainFromSun * cloudAbsorptionFactor;
+				cloudReflection = sunAngle * Data.heatGainFromSun * cloudReflectionFactor;
 
 				// gain any heat not absorbed on first pass through the clouds
 				float slope = 1;
 				if (ice > 0)
 				{
-					reflection = heatReflectionIce;
+					reflection = Data.heatReflectionIce;
 				}
 				else if (elevation <= seaLevel) // ocean
 				{
-					reflection = heatReflectionWater;
+					reflection = Data.heatReflectionWater;
 				}
 				else // land
 				{
 					slope = Math.Max(0, Vector3.Dot(terrainNormal, sunVector));
 					// reflection = mineralTypes[cells[i, j].mineral].heatReflection;
-					reflection = HeatReflectionLand;
+					reflection = Data.HeatReflectionLand;
 				}
-				float sunGain = slope * heatGainFromSun - cloudGain - cloudReflection;
+				float sunGain = slope * Data.heatGainFromSun - cloudGain - cloudReflection;
 				gain += sunGain * (1.0f - reflection) * (1.0f - humidityPercentage);
 
 				// trap some heat in
@@ -508,13 +549,13 @@ namespace Seed
 		private float GetAtmosphereMass(float elevation, float elevationOrSeaLevel)
 		{
 			float atmosphereMass;
-			if (elevation <= troposphereElevation)
+			if (elevation <= Data.troposphereElevation)
 			{
-				atmosphereMass = (troposphereElevation - elevationOrSeaLevel) / troposphereAtmosphereContent;
+				atmosphereMass = (Data.troposphereElevation - elevationOrSeaLevel) / Data.troposphereAtmosphereContent;
 			}
 			else
 			{
-				atmosphereMass = troposphereElevation + (stratosphereElevation - elevationOrSeaLevel) * (1.0f - troposphereAtmosphereContent) * troposphereElevation;
+				atmosphereMass = Data.troposphereElevation + (Data.stratosphereElevation - elevationOrSeaLevel) * (1.0f - Data.troposphereAtmosphereContent) * Data.troposphereElevation;
 			}
 
 			return atmosphereMass;
@@ -567,10 +608,10 @@ namespace Seed
 					g = Vector2.Zero;
 				}
 
-				flowDirection = new Vector2(Math.Sign(g.X) * (1.0f +(float)Math.Pow(Math.Abs(g.X) / tileSize, FlowSpeedExponent)), Math.Sign(g.Y) * (1.0f + (float)Math.Pow(Math.Abs(g.X) / tileSize, FlowSpeedExponent)));
+				flowDirection = new Vector2(Math.Sign(g.X) * (1.0f +(float)Math.Pow(Math.Abs(g.X) / Data.tileSize, Data.FlowSpeedExponent)), Math.Sign(g.Y) * (1.0f + (float)Math.Pow(Math.Abs(g.X) / Data.tileSize, Data.FlowSpeedExponent)));
 
 				// TODO: this is wong, gradient is just steepest downhill direction
-				normal = Vector3.Normalize(new Vector3(g.X, g.Y, tileSize));
+				normal = Vector3.Normalize(new Vector3(g.X, g.Y, Data.tileSize));
 
 			}
 		}
@@ -612,8 +653,8 @@ namespace Seed
 						break;
 				}
 			}
-			Vector3 newWind = new Vector3(pressureDifferential.X, pressureDifferential.Y, (pressureDifferential.X + pressureDifferential.Y) / 4) * pressureDifferentialWindSpeed;
-			return newWind * ( 1.0f - windInertia) + nWind / 4 * windInertia;
+			Vector3 newWind = new Vector3(pressureDifferential.X, pressureDifferential.Y, (pressureDifferential.X + pressureDifferential.Y) / 4) * Data.pressureDifferentialWindSpeed;
+			return newWind * ( 1.0f - Data.windInertia) + nWind / 4 * Data.windInertia;
 
 		}
 

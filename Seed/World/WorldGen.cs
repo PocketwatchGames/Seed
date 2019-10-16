@@ -32,19 +32,19 @@ namespace Seed
 			int numSpecies = 3;
 			state.Species[0].Name = "Hot Herb";
 			state.Species[0].Food = SpeciesType.FoodType.Herbivore;
-			state.Species[0].RestingTemperature = FreezingTemperature + 50;
+			state.Species[0].RestingTemperature = Data.FreezingTemperature + 50;
 			state.Species[0].TemperatureRange = 5000;
 			state.Species[0].Color = new Color(100, 60, 20);
 
 			state.Species[1].Name = "Basic Beast";
 			state.Species[1].Food = SpeciesType.FoodType.Herbivore;
-			state.Species[1].RestingTemperature = FreezingTemperature + 35;
+			state.Species[1].RestingTemperature = Data.FreezingTemperature + 35;
 			state.Species[1].TemperatureRange = 3000;
 			state.Species[1].Color = new Color(120, 100, 20);
 
 			state.Species[2].Name = "Supacold";
 			state.Species[2].Food = SpeciesType.FoodType.Herbivore;
-			state.Species[2].RestingTemperature = FreezingTemperature + 20;
+			state.Species[2].RestingTemperature = Data.FreezingTemperature + 20;
 			state.Species[2].TemperatureRange = 3000;
 			state.Species[2].Color = new Color(60, 20, 100);
 
@@ -54,29 +54,29 @@ namespace Seed
 				{
 					int index = GetIndex(x, y);
 					var e =
-						GetPerlinMinMax(noise, x, y, 0.25f, 0, MinElevation, MaxElevation) * 0.4f +
-						GetPerlinMinMax(noise, x, y, 0.5f, 10, MinElevation, MaxElevation) * 0.3f +
-						GetPerlinMinMax(noise, x, y, 1.0f, 20, MinElevation, MaxElevation) * 0.2f +
-						GetPerlinMinMax(noise, x, y, 2.0f, 30, MinElevation, MaxElevation) * 0.1f;
+						GetPerlinMinMax(noise, x, y, 0.25f, 0, Data.MinElevation, Data.MaxElevation) * 0.4f +
+						GetPerlinMinMax(noise, x, y, 0.5f, 10, Data.MinElevation, Data.MaxElevation) * 0.3f +
+						GetPerlinMinMax(noise, x, y, 1.0f, 20, Data.MinElevation, Data.MaxElevation) * 0.2f +
+						GetPerlinMinMax(noise, x, y, 2.0f, 30, Data.MinElevation, Data.MaxElevation) * 0.1f;
 					state.Elevation[index] = e;
 					float latitude = GetLatitude(y);
-					state.Temperature[index] = (1.0f - MathHelper.Clamp(e - state.SeaLevel, 0, MaxElevation) / (MaxElevation - state.SeaLevel)) * (1.0f - latitude * latitude) * (MaxTemperature - MinTemperature) + MinTemperature;
+					state.Temperature[index] = (1.0f - MathHelper.Clamp(e - state.SeaLevel, 0, Data.MaxElevation) / (Data.MaxElevation - state.SeaLevel)) * (1.0f - latitude * latitude) * (Data.MaxTemperature - Data.MinTemperature) + Data.MinTemperature;
 					state.CloudCover[index] = GetPerlinMinMax(noise, x, y, 3.0f, 2000, 0, 2);
 					state.Humidity[index] = GetPerlinMinMax(noise, x, y, 3.0f, 3000, 0, 2);
 					state.CloudElevation[index] = state.Elevation[index] + 1000;
-					state.WaterTableDepth[index] = GetPerlinMinMax(noise, x, y, 1.0f, 200, MinWaterTableDepth, MaxWaterTableDepth);
+					state.WaterTableDepth[index] = GetPerlinMinMax(noise, x, y, 1.0f, 200, Data.MinWaterTableDepth, Data.MaxWaterTableDepth);
 					state.SoilFertility[index] = GetPerlinNormalized(noise, x, y, 1.0f, 400);
 					state.Pressure[index] = GetPressureAtElevation(state, index, Math.Max(state.SeaLevel, e), 0);
 					if (e > 0)
 					{
-						state.SurfaceWater[index] = GetPerlinMinMax(noise, x, y, 1.0f, 100, 0, 2.0f);
-						state.GroundWater[index] = GetPerlinMinMax(noise, x, y, 1.0f, 300, 0, state.WaterTableDepth[index] * state.SoilFertility[index] * MaxSoilPorousness);
+						state.SurfaceWater[index] = GetPerlinMinMax(noise, x, y, 1.0f, 100, 0, 10.0f);
+						state.GroundWater[index] = GetPerlinMinMax(noise, x, y, 1.0f, 300, 0, state.WaterTableDepth[index] * state.SoilFertility[index] * Data.MaxSoilPorousness);
 						state.Canopy[index] = GetPerlinNormalized(noise, x, y, 2.0f, 1000);
 
 						for (int s = 0; s < numSpecies; s++)
 						{
 							int speciesIndex = GetSpeciesIndex(x, y, s);
-							state.Population[speciesIndex] = (short)Math.Max(0, GetPerlinMinMax(noise, x, y, 1.0f, 10000 + 1000 * s, -speciesMaxPopulation, speciesMaxPopulation));
+							state.Population[speciesIndex] = (short)Math.Max(0, GetPerlinMinMax(noise, x, y, 1.0f, 10000 + 1000 * s, -Data.speciesMaxPopulation, Data.speciesMaxPopulation));
 						}
 
 					}

@@ -31,9 +31,10 @@ namespace Seed
 			TemperatureSubtle = 1 << 13,
 			Wind = 1 << 14,
 			Pressure = 1 << 15,
-			Humidity = 1 << 16,
+			RelativeHumidity = 1 << 16,
 			Rainfall = 1 << 17,
 			Probes = 1 << 18,
+			WaterVapor = 1 << 19,
 
 		}
 
@@ -75,7 +76,7 @@ namespace Seed
 					Color color = Color.White;
 					float elevation = state.Elevation[index];
 					float ice = state.SurfaceIce[index];
-					float normalizedElevation = (elevation - MinElevation) / (MaxElevation - MinElevation);
+					float normalizedElevation = (elevation - Data.MinElevation) / (Data.MaxElevation - Data.MinElevation);
 					bool drawOcean = elevation <= state.SeaLevel && showLayers.HasFlag(Layers.Water);
 
 					// Base color
@@ -84,7 +85,7 @@ namespace Seed
 					{
 						if (showLayers.HasFlag(Layers.ElevationSubtle))
 						{
-							color = Color.Lerp(Color.DarkBlue, Color.Blue, (state.SeaLevel - elevation) / MinElevation);
+							color = Color.Lerp(Color.DarkBlue, Color.Blue, (state.SeaLevel - elevation) / Data.MinElevation);
 						}
 						else
 						{
@@ -92,7 +93,7 @@ namespace Seed
 						}
 						if (ice > 0)
 						{
-							color = Color.Lerp(color, Color.LightSteelBlue, Math.Min(1.0f, ice / maxIce));
+							color = Color.Lerp(color, Color.LightSteelBlue, Math.Min(1.0f, ice / Data.maxIce));
 						}
 					}
 					else
@@ -116,7 +117,7 @@ namespace Seed
 
 					if (showLayers.HasFlag(Layers.TemperatureSubtle))
 					{
-						color = Lerp(new List<CVP>() { new CVP(Color.LightBlue, -500 + FreezingTemperature), new CVP(color, FreezingTemperature), new CVP(Color.Red, 500 + FreezingTemperature) }, state.Temperature[index]);
+						color = Lerp(new List<CVP>() { new CVP(Color.LightBlue, -500 + Data.FreezingTemperature), new CVP(color, Data.FreezingTemperature), new CVP(Color.Red, 500 + Data.FreezingTemperature) }, state.Temperature[index]);
 					}
 
 
@@ -129,10 +130,10 @@ namespace Seed
 						{
 							int width = (int)(Math.Min(1.0f, sw + ice) * (tileRenderSize - 2));
 							Rectangle surfaceWaterRect = new Rectangle(x * tileRenderSize + 1, y * tileRenderSize + 1, width, width);
-							Color waterColor = Color.Lerp(Color.Blue, Color.Teal, (elevation - state.SeaLevel) / (MaxElevation - state.SeaLevel));
+							Color waterColor = Color.Lerp(Color.Blue, Color.Teal, (elevation - state.SeaLevel) / (Data.MaxElevation - state.SeaLevel));
 							if (ice > 0)
 							{
-								waterColor = Color.Lerp(waterColor, Color.LightSteelBlue, Math.Min(1.0f, ice / maxIce));
+								waterColor = Color.Lerp(waterColor, Color.LightSteelBlue, Math.Min(1.0f, ice / Data.maxIce));
 							}
 
 							spriteBatch.Draw(whiteTex, surfaceWaterRect, waterColor * 0.75f);
@@ -142,41 +143,46 @@ namespace Seed
 					if (showLayers.HasFlag(Layers.Temperature))
 					{
 						color = Lerp(new List<CVP> {
-								new CVP(Color.Black, -45+FreezingTemperature),
-								new CVP(Color.Blue, -15 + FreezingTemperature),
-								new CVP(Color.Green, 15+FreezingTemperature),
-								new CVP(Color.Red, 45+FreezingTemperature),
-								new CVP(Color.White, 75+FreezingTemperature) },
+								new CVP(Color.Black, -45+Data.FreezingTemperature),
+								new CVP(Color.Blue, -15 + Data.FreezingTemperature),
+								new CVP(Color.Green, 15+Data.FreezingTemperature),
+								new CVP(Color.Red, 45+Data.FreezingTemperature),
+								new CVP(Color.White, 75+Data.FreezingTemperature) },
 							state.Temperature[index]);
 						spriteBatch.Draw(whiteTex, rect, color);
 					}
 					else if (showLayers.HasFlag(Layers.Pressure))
 					{
-						float minPressure = StaticPressure - 40000;
-						float maxPressure = StaticPressure + 10000;
+						float minPressure = Data.StaticPressure - 40000;
+						float maxPressure = Data.StaticPressure + 10000;
 						color = Lerp(new List<CVP> { new CVP(Color.Pink, minPressure), new CVP(Color.White, (maxPressure + minPressure) / 2), new CVP(Color.LightBlue, maxPressure) }, state.Pressure[index]);
 						spriteBatch.Draw(whiteTex, rect, color);
 					}
-					else if (showLayers.HasFlag(Layers.Humidity))
+					else if (showLayers.HasFlag(Layers.WaterVapor))
 					{
-						float maxHumidity = 5;
+						float maxHumidity = 15;
 						color = Color.Lerp(Color.Black, Color.Blue, Math.Min(1.0f, state.Humidity[index] / maxHumidity));
+						spriteBatch.Draw(whiteTex, rect, color);
+					}
+					else if (showLayers.HasFlag(Layers.RelativeHumidity))
+					{
+						color = Color.Lerp(Color.Black, Color.Blue, Math.Min(1.0f, GetRelativeHumidity(GetLocalTemperature(Math.Max(0,GetSunVector(state.Ticks, GetLatitude(y)).Z), state.CloudCover[index], state.Temperature[index]), state.Humidity[index], state.CloudElevation[index], Math.Max(elevation, state.SeaLevel)) / Data.dewPointRange));
 						spriteBatch.Draw(whiteTex, rect, color);
 					}
 					else if (showLayers.HasFlag(Layers.Rainfall))
 					{
-						float maxRainfall = 5.0f / TicksPerYear;
+						float maxRainfall = 5.0f / Data.TicksPerYear;
 						color = Color.Lerp(Color.Black, Color.Blue, Math.Min(1.0f, state.Rainfall[index] / maxRainfall));
 						spriteBatch.Draw(whiteTex, rect, color);
 					}
 					else if (showLayers.HasFlag(Layers.GroundWater))
 					{
-						color = Color.Lerp(Color.DarkBlue, Color.Gray, Math.Min(1.0f, state.GroundWater[index] / (MaxWaterTableDepth * MaxSoilPorousness)));
+						color = Color.Lerp(Color.DarkBlue, Color.Gray, Math.Min(1.0f, state.GroundWater[index] / (Data.MaxWaterTableDepth * Data.MaxSoilPorousness)));
 						spriteBatch.Draw(whiteTex, rect, color);
 					}
 					else if (showLayers.HasFlag(Layers.WaterTableDepth))
 					{
-						color = Color.Lerp(Color.Black, Color.White, (state.WaterTableDepth[index] - MinWaterTableDepth) / (MaxWaterTableDepth - MinWaterTableDepth));
+						color = Color.Lerp(Color.Black, Color.White, (state.WaterTableDepth[index] - Data.MinWaterTableDepth) / (Data.MaxWaterTableDepth - Data.MinWaterTableDepth));
 						spriteBatch.Draw(whiteTex, rect, color);
 					}
 					else if (showLayers.HasFlag(Layers.Elevation))
@@ -209,7 +215,7 @@ namespace Seed
 							if (pop > 0)
 							{
 								Rectangle rect = new Rectangle(x * tileRenderSize, y * tileRenderSize, tileRenderSize, tileRenderSize);
-								int p = MathHelper.Clamp((int)Math.Ceiling(tileRenderSize * (float)pop / speciesMaxPopulation), 0, tileRenderSize);
+								int p = MathHelper.Clamp((int)Math.Ceiling(tileRenderSize * (float)pop / Data.speciesMaxPopulation), 0, tileRenderSize);
 								for (int i = 0; i < p; i++)
 								{
 									int screenX = rect.X + i * 2;
@@ -254,14 +260,15 @@ namespace Seed
 							var wind = GetWindAtElevation(state, state.CloudElevation[index], elevationOrSeaLevel, index, GetLatitude(y), state.Normal[index]);
 							//var wind = GetWindAtElevation(state, elevationOrSeaLevel, elevationOrSeaLevel, index, GetLatitude(y), state.Normal[index]);
 							float maxWindSpeed = 40;
+							float maxWindSpeedVertical = 2;
 							Color windColor;
 							if (wind.Z < 0)
 							{
-								windColor = Color.Lerp(Color.White, Color.Blue, -wind.Z / maxWindSpeed);
+								windColor = Color.Lerp(Color.White, Color.Blue, -wind.Z / maxWindSpeedVertical);
 							}
 							else
 							{
-								windColor = Color.Lerp(Color.White, Color.Red, wind.Z / maxWindSpeed);
+								windColor = Color.Lerp(Color.White, Color.Red, wind.Z / maxWindSpeedVertical);
 							}
 							float windXYSpeed = (float)Math.Sqrt(wind.X * wind.X + wind.Y * wind.Y);
 							Rectangle rect = new Rectangle(x * tileRenderSize, y * tileRenderSize, tileRenderSize, tileRenderSize);

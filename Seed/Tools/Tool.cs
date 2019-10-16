@@ -31,12 +31,12 @@ namespace Seed
 
 			spriteBatch.DrawString(gui.Font, "Index: " + index, new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "Elevation: " + (int)(state.Elevation[index]), new Vector2(5, textY += 15), Color.White);
-			spriteBatch.DrawString(gui.Font, "Temperature: " + (int)(state.Temperature[index] - World.FreezingTemperature), new Vector2(5, textY += 15), Color.White);
-			spriteBatch.DrawString(gui.Font, "Pressure: " + (state.Pressure[index] / World.StaticPressure).ToString("0.00"), new Vector2(5, textY += 15), Color.White);
+			spriteBatch.DrawString(gui.Font, "Temperature: " + (int)(state.Temperature[index] - gui.World.Data.FreezingTemperature), new Vector2(5, textY += 15), Color.White);
+			spriteBatch.DrawString(gui.Font, "Pressure: " + (state.Pressure[index] / gui.World.Data.StaticPressure).ToString("0.00"), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "Humidity: " + state.Humidity[index].ToString("0.00"), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "CloudCover: " + state.CloudCover[index].ToString("0.00"), new Vector2(5, textY += 15), Color.White);
-			spriteBatch.DrawString(gui.Font, "Rainfall: " + (state.Rainfall[index] * World.TicksPerYear).ToString("0.00"), new Vector2(5, textY += 15), Color.White);
-			spriteBatch.DrawString(gui.Font, "Evaporation: " + (state.Evaporation[index] * World.TicksPerYear).ToString("0.00"), new Vector2(5, textY += 15), Color.White);
+			spriteBatch.DrawString(gui.Font, "Rainfall: " + (state.Rainfall[index] * gui.World.Data.TicksPerYear).ToString("0.00"), new Vector2(5, textY += 15), Color.White);
+			spriteBatch.DrawString(gui.Font, "Evaporation: " + (state.Evaporation[index] * gui.World.Data.TicksPerYear).ToString("0.00"), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "WaterTableDepth: " + (int)state.WaterTableDepth[index], new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "GroundWater: " + state.GroundWater[index].ToString("0.00"), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "SurfaceWater: " + state.SurfaceWater[index].ToString("0.00"), new Vector2(5, textY += 15), Color.White);
@@ -53,7 +53,7 @@ namespace Seed
 					float population = state.Population[speciesIndex];
 					spriteBatch.DrawString(gui.Font,
 						state.Species[s].Name + ": " + ((int)population) +
-						" +" + gui.World.speciesGrowthRate.ToString("0.000") +
+						" +" + gui.World.Data.speciesGrowthRate.ToString("0.000") +
 						" Starvation: " + gui.World.GetStarvation(gui.World.GetPopulationDensity(population), state.Canopy[index]).ToString("0.000") +
 						" Dehydration: " + gui.World.GetDehydration(gui.World.GetPopulationDensity(population), gui.World.GetFreshWaterAvailability(state.SurfaceWater[index], gui.World.GetGroundWaterSaturation(state.GroundWater[index], state.WaterTableDepth[index], state.SoilFertility[index]))).ToString("0.000") +
 						" TemperatureDeath: " + gui.World.GetTemperatureDeath(ref state, state.Temperature[index], s).ToString("0.000"),

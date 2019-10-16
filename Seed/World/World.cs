@@ -88,6 +88,11 @@ namespace Seed
 			Size = size;
 			int s = Size * Size;
 
+			Data = new SimData();
+			ActiveFeatures = SimFeature.All;
+			ActiveFeatures &= ~(SimFeature.Evaporation);
+			Data.Init(ActiveFeatures);
+
 			for (int i = 0; i < StateCount; i++)
 			{
 				States[i] = new State();
@@ -178,15 +183,15 @@ namespace Seed
 			return y * Size + x + s * Size*Size;
 		}
 
-		static public float GetTimeOfYear(int ticks)
+		public float GetTimeOfYear(int ticks)
 		{
-			float t = (float)ticks / TicksPerYear;
+			float t = (float)ticks / Data.TicksPerYear;
 			return t - (int)t;
 		}
 
-		static public int GetYear(int ticks)
+		public int GetYear(int ticks)
 		{
-			return ticks / TicksPerYear;
+			return ticks / Data.TicksPerYear;
 		}
 
 		public float GetLatitude(int y)

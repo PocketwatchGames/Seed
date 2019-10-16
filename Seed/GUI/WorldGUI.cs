@@ -29,9 +29,10 @@ namespace Seed
 			new Tuple<World.Layers, Keys>(World.Layers.CloudCoverage, Keys.F4),
 			new Tuple<World.Layers, Keys>(World.Layers.Temperature, Keys.F5),
 			new Tuple<World.Layers, Keys>(World.Layers.Pressure, Keys.F6),
-			new Tuple<World.Layers, Keys>(World.Layers.Humidity, Keys.F7),
-			new Tuple<World.Layers, Keys>(World.Layers.Rainfall, Keys.F8),
-			new Tuple<World.Layers, Keys>(World.Layers.Wind, Keys.F9),
+			new Tuple<World.Layers, Keys>(World.Layers.WaterVapor, Keys.F7),
+			new Tuple<World.Layers, Keys>(World.Layers.RelativeHumidity, Keys.F8),
+			new Tuple<World.Layers, Keys>(World.Layers.Rainfall, Keys.F9),
+			new Tuple<World.Layers, Keys>(World.Layers.Wind, Keys.F10),
 		};
 
 

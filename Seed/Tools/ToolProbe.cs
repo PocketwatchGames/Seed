@@ -42,11 +42,11 @@ namespace Seed
 			for (int i=0;i< probe.TotalSamples;i++)
 			{
 				int index = (i + probe.CurSampleIndex - probe.TotalSamples + Probe.SampleCount) % Probe.SampleCount;
-				DrawDataPoint(spriteBatch, i, probe.Temperature[index], World.FreezingTemperature - 60, World.FreezingTemperature + 60, Color.Red);
-				DrawDataPoint(spriteBatch, i, probe.Pressure[index], World.StaticPressure - 5000, World.StaticPressure + 1000, Color.Orange);
+				DrawDataPoint(spriteBatch, i, probe.Temperature[index], Gui.World.Data.FreezingTemperature - 60, Gui.World.Data.FreezingTemperature + 60, Color.Red);
+				DrawDataPoint(spriteBatch, i, probe.Pressure[index], Gui.World.Data.StaticPressure - 5000, Gui.World.Data.StaticPressure + 1000, Color.Orange);
 				DrawDataPoint(spriteBatch, i, probe.Humidity[index], 0, 6, Color.LightBlue);
 				DrawDataPoint(spriteBatch, i, probe.CloudCover[index], 0, 6, Color.Gray);
-				DrawDataPoint(spriteBatch, i, probe.Rainfall[index], 0, 10.0f / World.TicksPerYear, Color.DarkBlue);
+				DrawDataPoint(spriteBatch, i, probe.Rainfall[index], 0, 10.0f / Gui.World.Data.TicksPerYear, Color.DarkBlue);
 				DrawDataPoint(spriteBatch, i, probe.GroundWater[index], 0, 5, Color.Brown);
 				DrawDataPoint(spriteBatch, i, probe.SurfaceWater[index], 0, 5, Color.Teal);
 				DrawDataPoint(spriteBatch, i, probe.Canopy[index], 0, 5, Color.Green);

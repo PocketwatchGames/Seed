@@ -24,12 +24,12 @@ namespace Seed
 					{
 						float t = state.Temperature[index];
 						float sf = state.SoilFertility[index];
-						float groundWaterSaturation = GetGroundWaterSaturation(state.GroundWater[index], state.WaterTableDepth[index], sf * MaxSoilPorousness);
+						float groundWaterSaturation = GetGroundWaterSaturation(state.GroundWater[index], state.WaterTableDepth[index], sf * Data.MaxSoilPorousness);
 						float surfaceWater = state.SurfaceWater[index];
 						freshWaterAvailability = GetFreshWaterAvailability(surfaceWater, groundWaterSaturation);
 
-						float desiredCanopy = sf * Math.Min(groundWaterSaturation + surfaceWater, 1.0f) * Math.Max(0, (t - MinTemperature) / (MaxTemperature - MinTemperature));
-						float canopyGrowth = (desiredCanopy - canopy) * canopyGrowthRate;
+						float desiredCanopy = sf * Math.Min(groundWaterSaturation + surfaceWater, 1.0f) * Math.Max(0, (t - Data.MinTemperature) / (Data.MaxTemperature - Data.MinTemperature));
+						float canopyGrowth = (desiredCanopy - canopy) * Data.canopyGrowthRate;
 						canopy += canopyGrowth;
 
 						float expansion = canopy * canopyGrowth * 0.25f;
@@ -55,17 +55,17 @@ namespace Seed
 							float populationDensity = GetPopulationDensity(p);
 
 
-							float populationPercentDied = speciesDeathRate;
+							float populationPercentDied = Data.speciesDeathRate;
 							populationPercentDied += GetTemperatureDeath(ref state, temperature, s);
 							populationPercentDied += GetStarvation(populationDensity, canopy);
 							populationPercentDied += GetDehydration(populationDensity, freshWaterAvailability);
 							populationPercentDied = Math.Min(1.0f, populationPercentDied);
 
-							float populationDelta = 1.0f + speciesGrowthRate - populationPercentDied;
-							if (populationDensity > minPopulationDensityForExpansion)
+							float populationDelta = 1.0f + Data.speciesGrowthRate - populationPercentDied;
+							if (populationDensity > Data.minPopulationDensityForExpansion)
 							{
-								float expansion = speciesGrowthRate * populationExpansionPercent * 0.25f;
-								float neighborGrowthRate = speciesMaxPopulation * populationDensity * expansion;
+								float expansion = Data.speciesGrowthRate * Data.populationExpansionPercent * 0.25f;
+								float neighborGrowthRate = Data.speciesMaxPopulation * populationDensity * expansion;
 								for (int i = 0; i < 4; i++)
 								{
 									var n = GetNeighbor(x, y, i);
@@ -79,14 +79,14 @@ namespace Seed
 							}
 							float newPopDensity = populationDensity * populationDelta;
 
-							float newPopulation = newPopDensity * speciesMaxPopulation;
+							float newPopulation = newPopDensity * Data.speciesMaxPopulation;
 							if (newPopulation < 1 && newPopulation < state.Population[speciesIndex])
 							{
 								newPopulation = 0;
 							}
 							nextState.SpeciesStats[s].Population += newPopulation;
 							nextState.Population[speciesIndex] = newPopulation;
-							canopyEaten += populationDensity * speciesEatRate;
+							canopyEaten += populationDensity * Data.speciesEatRate;
 						}
 					}
 					nextState.Canopy[index] = Math.Max(0, canopy - canopyEaten);
@@ -106,11 +106,11 @@ namespace Seed
 		}
 		public float GetPopulationDensity(float population)
 		{
-			return (float)population / speciesMaxPopulation;
+			return (float)population / Data.speciesMaxPopulation;
 		}
 		public float GetStarvation(float populationDensity, float canopy)
 		{
-			return Math.Max(0, (populationDensity - canopy) * starvationSpeed);
+			return Math.Max(0, (populationDensity - canopy) * Data.starvationSpeed);
 		}
 		public float GetTemperatureDeath(ref State state, float temperature, int species)
 		{
@@ -118,7 +118,7 @@ namespace Seed
 		}
 		public float GetDehydration(float populationDensity, float freshWaterAvailability)
 		{
-			return Math.Max(0, (populationDensity - freshWaterAvailability / freshWaterMaxAvailability) * dehydrationSpeed);
+			return Math.Max(0, (populationDensity - freshWaterAvailability / Data.freshWaterMaxAvailability) * Data.dehydrationSpeed);
 		}
 
 
