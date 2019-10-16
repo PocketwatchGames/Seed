@@ -60,9 +60,15 @@ namespace Seed
 		public int tileRenderSize = 10;
 		public void Draw(GameTime gameTime, SpriteBatch spriteBatch, Layers showLayers, Texture2D whiteTex)
 		{
+			lock (DrawLock)
+			{
+				LastRenderStateIndex = CurRenderStateIndex;
+				CurRenderStateIndex = CurStateIndex;
+			}
+
 			spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
 
-			ref var state = ref States[NextRenderStateIndex];
+			ref var state = ref States[CurRenderStateIndex];
 			ref var lastState = ref States[LastRenderStateIndex];
 			stateLerpT = Math.Max(1.0f, (float)gameTime.ElapsedGameTime.Ticks / TimeSpan.TicksPerSecond * 10);
 
@@ -257,7 +263,7 @@ namespace Seed
 						{
 							//							var wind = state.Wind[index];
 							float elevationOrSeaLevel = Math.Max(state.SeaLevel, state.Elevation[index]);
-							var wind = GetWindAtElevation(state, state.CloudElevation[index], elevationOrSeaLevel, index, GetLatitude(y), state.Normal[index]);
+							var wind = state.WindCloud[index];
 							//var wind = GetWindAtElevation(state, elevationOrSeaLevel, elevationOrSeaLevel, index, GetLatitude(y), state.Normal[index]);
 							float maxWindSpeed = 40;
 							float maxWindSpeedVertical = 2;

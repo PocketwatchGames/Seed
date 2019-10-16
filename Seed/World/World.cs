@@ -40,10 +40,13 @@ namespace Seed
 		const int ProbeCount = 3;
 		public Probe[] Probes = new Probe[ProbeCount];
 		public int CurStateIndex;
+		public int LastStateIndex;
+		public int CurRenderStateIndex;
 		public int LastRenderStateIndex;
-		public int NextRenderStateIndex;
 		public object DrawLock = new object();
 		public object InputLock = new object();
+		private Task _simTask;
+
 		public class State : ICloneable
 		{
 			public int Ticks;
@@ -73,6 +76,8 @@ namespace Seed
 			public float[] Canopy;
 			public float[] Population;
 			public float[] Pressure;
+			public Vector3[] WindCloud;
+			public Vector3[] WindSurface;
 			public Vector3[] Wind;
 			public Vector2[] FlowDirection;
 			public Vector3[] Normal;
@@ -91,7 +96,8 @@ namespace Seed
 			Data = new SimData();
 			ActiveFeatures = SimFeature.All;
 			ActiveFeatures &= ~(SimFeature.Evaporation);
-			Data.Init(ActiveFeatures);
+			Data.Init(ActiveFeatures, size);
+
 
 			for (int i = 0; i < StateCount; i++)
 			{
@@ -112,6 +118,8 @@ namespace Seed
 				States[i].SoilFertility = new float[s];
 				States[i].Canopy = new float[s];
 				States[i].Wind = new Vector3[s];
+				States[i].WindCloud = new Vector3[s];
+				States[i].WindSurface = new Vector3[s];
 				States[i].Pressure = new float[s];
 				States[i].FlowDirection = new Vector2[s];
 				States[i].Normal = new Vector3[s];
@@ -126,51 +134,43 @@ namespace Seed
 				Probes[i] = new Probe();
 			}
 
-		}
 
-		Task _simTask;
-		public void Update(GameTime gameTime)
-		{
-			TimeTillTick -= TimeScale * (float)gameTime.ElapsedGameTime.Ticks / TimeSpan.TicksPerSecond;
-
-			if (TimeTillTick <= 0)
+			_simTask = Task.Run(() =>
 			{
-				if (_simTask != null)
+				while (true)
 				{
-					_simTask.Wait();
-				}
-
-				_simTask = Task.Run(() =>
-				{
-					lock (InputLock)
+					if (TimeTillTick <= 0)
 					{
-						bool didATick = false;
-						while (TimeTillTick <= 0)
+						TimeTillTick += TicksPerSecond;
+
+						int nextStateIndex = (CurStateIndex + 1) % StateCount;
+						lock (DrawLock)
 						{
-							TimeTillTick += TicksPerSecond;
-							int nextStateIndex = (CurStateIndex + 1) % StateCount;
-							while (nextStateIndex == LastRenderStateIndex || nextStateIndex == NextRenderStateIndex)
+							while (nextStateIndex == LastRenderStateIndex || nextStateIndex == CurRenderStateIndex)
 							{
 								nextStateIndex = (nextStateIndex + 1) % StateCount;
 							}
+						}
 
+						lock (InputLock)
+						{
 							Tick(States[CurStateIndex], States[nextStateIndex]);
 
-						// TODO: why can't i edit this in the tick call?  it's a class, so it should be pass by reference?
-							States[nextStateIndex].Ticks = States[CurStateIndex].Ticks+1;
+							// TODO: why can't i edit this in the tick call?  it's a class, so it should be pass by reference?
+							States[nextStateIndex].Ticks = States[CurStateIndex].Ticks + 1;
 							CurStateIndex = nextStateIndex;
-							didATick = true;
-						}
-						if (didATick)
-						{
-							lock (DrawLock)
-							{
-								LastRenderStateIndex = NextRenderStateIndex;
-								NextRenderStateIndex = CurStateIndex;
-							}
 						}
 					}
-				});
+				}
+
+			});
+		}
+
+		public void Update(GameTime gameTime)
+		{
+			if (TimeTillTick > -1)
+			{
+				TimeTillTick -= TimeScale * (float)gameTime.ElapsedGameTime.Ticks / TimeSpan.TicksPerSecond;
 			}
 		}
 

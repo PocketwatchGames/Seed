@@ -14,7 +14,7 @@ namespace Seed
 	{
 		KeyboardState _lastKeyboardState;
 		MouseState _lastMouseState;
-		List<float> _timeScales = new List<float> { 0, 5, 20, 100 };
+		List<float> _timeScales = new List<float> { 0, 5, 20, 200 };
 		int _timeScaleIndex = 0;
 		Point viewport;
 
@@ -49,6 +49,9 @@ namespace Seed
 		public Vector2 CameraPos = new Vector2(50,50);
 		public float Zoom { get { return 0.5f + 0.5f * (float)Math.Pow(ZoomLevel + 0.5f, 4); } }
 		public float ZoomLevel = 0.5f;
+
+		public long _tickTimer;
+		public int _ticksLastSecond, _ticksToDisplay;
 
 		public WorldGUI(World world)
 		{
@@ -203,70 +206,77 @@ namespace Seed
 
 		public void Draw(GameTime gameTime, SpriteBatch spriteBatch, GraphicsDevice graphics )
 		{
-			lock (World.DrawLock)
+
+			graphics.SetRenderTarget(_worldRenderTarget);
+			World.Draw(gameTime, spriteBatch, ShowLayers, whiteTex);
+
+
+			World.State state = World.States[World.CurRenderStateIndex];
+
+			_tickTimer += gameTime.ElapsedGameTime.Ticks;
+			if (_tickTimer >= TimeSpan.TicksPerSecond)
 			{
-				graphics.SetRenderTarget(_worldRenderTarget);
-				World.Draw(gameTime, spriteBatch, ShowLayers, whiteTex);
-
-
-				World.State state = World.States[World.NextRenderStateIndex];
-
-				var curTool = GetTool(ActiveTool);
-				if (curTool != null)
-				{
-					curTool.DrawWorld(spriteBatch, state);
-				}
-				graphics.SetRenderTarget(null);
-
-				spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
-				Vector2 cameraPos = new Vector2(CameraPos.X * World.tileRenderSize, CameraPos.Y * World.tileRenderSize);
-
-				spriteBatch.Draw(_worldRenderTarget, new Rectangle((int)(viewport.X / 2 - cameraPos.X * Zoom), (int)(viewport.Y / 2 - cameraPos.Y * Zoom), (int)(Zoom * _worldRenderTarget.Width), (int)(Zoom * _worldRenderTarget.Height)), null, Color.White);
-
-				spriteBatch.Draw(whiteTex, new Rectangle(0, 0, 150, 15 * LayerDisplayKeys.Count + 20), null, Color.Black * 0.5f);
-
-				int textY = 5;
-
-				for (int i = 0; i < Tools.Count; i++)
-				{
-					spriteBatch.DrawString(Font, Tools[i].HotKey + " - [" + ((i == ActiveTool) ? "X" : " ") + "] " + Tools[i].Name, new Vector2(5, textY), Color.White);
-					textY += 15;
-				}
-				textY += 20;
-
-				spriteBatch.DrawString(Font, "[ x" + ((int)World.TimeScale) + " ]", new Vector2(5, textY), Color.White);
-				textY += 20;
-
-				foreach (var k in LayerDisplayKeys)
-				{
-					spriteBatch.DrawString(Font, "[" + (ShowLayers.HasFlag(k.Item1) ? "X" : " ") + "] - " + k.Item2 + " - " + k.Item1.ToString(), new Vector2(5, textY), Color.White);
-					textY += 15;
-				}
-
-				spriteBatch.DrawString(Font, (int)(World.GetTimeOfYear(state.Ticks) * 12 + 1) + "/" + World.GetYear(state.Ticks), new Vector2(5, textY), Color.White);
-				textY += 20;
-
-
-				textY += 15;
-				for (int s = 0; s < World.MaxSpecies; s++)
-				{
-					if (state.SpeciesStats[s].Population > 0)
-					{
-						var species = state.Species[s];
-						spriteBatch.Draw(whiteTex, new Rectangle(5, textY, 10, 10), null, species.Color);
-						spriteBatch.DrawString(Font, species.Name + " [" + species.Food.ToString().Substring(0, 1) + "] " + ((float)state.SpeciesStats[s].Population / 1000000).ToString("0.00"), new Vector2(20, textY), Color.White);
-						textY += 15;
-					}
-				}
-				textY += 15;
-
-				if (curTool != null)
-				{
-					curTool.DrawTooltip(spriteBatch, state);
-				}
-
-				spriteBatch.End();
+				_tickTimer -= TimeSpan.TicksPerSecond;
+				_ticksToDisplay = state.Ticks - _ticksLastSecond;
+				_ticksLastSecond = state.Ticks;
 			}
+
+			var curTool = GetTool(ActiveTool);
+			if (curTool != null)
+			{
+				curTool.DrawWorld(spriteBatch, state);
+			}
+			graphics.SetRenderTarget(null);
+
+			spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
+			Vector2 cameraPos = new Vector2(CameraPos.X * World.tileRenderSize, CameraPos.Y * World.tileRenderSize);
+
+			spriteBatch.Draw(_worldRenderTarget, new Rectangle((int)(viewport.X / 2 - cameraPos.X * Zoom), (int)(viewport.Y / 2 - cameraPos.Y * Zoom), (int)(Zoom * _worldRenderTarget.Width), (int)(Zoom * _worldRenderTarget.Height)), null, Color.White);
+
+			spriteBatch.Draw(whiteTex, new Rectangle(0, 0, 150, 15 * LayerDisplayKeys.Count + 20), null, Color.Black * 0.5f);
+
+			int textY = 5;
+
+			for (int i = 0; i < Tools.Count; i++)
+			{
+				spriteBatch.DrawString(Font, Tools[i].HotKey + " - [" + ((i == ActiveTool) ? "X" : " ") + "] " + Tools[i].Name, new Vector2(5, textY), Color.White);
+				textY += 15;
+			}
+			textY += 20;
+
+			spriteBatch.DrawString(Font, "[ x" + ((int)World.TimeScale) + " ] (actual = " + _ticksToDisplay + ")", new Vector2(5, textY), Color.White);
+			textY += 20;
+
+			foreach (var k in LayerDisplayKeys)
+			{
+				spriteBatch.DrawString(Font, "[" + (ShowLayers.HasFlag(k.Item1) ? "X" : " ") + "] - " + k.Item2 + " - " + k.Item1.ToString(), new Vector2(5, textY), Color.White);
+				textY += 15;
+			}
+
+			spriteBatch.DrawString(Font, (int)(World.GetTimeOfYear(state.Ticks) * 12 + 1) + "/" + World.GetYear(state.Ticks), new Vector2(5, textY), Color.White);
+			textY += 20;
+
+
+			textY += 15;
+			for (int s = 0; s < World.MaxSpecies; s++)
+			{
+				if (state.SpeciesStats[s].Population > 0)
+				{
+					var species = state.Species[s];
+					spriteBatch.Draw(whiteTex, new Rectangle(5, textY, 10, 10), null, species.Color);
+					spriteBatch.DrawString(Font, species.Name + " [" + species.Food.ToString().Substring(0, 1) + "] " + ((float)state.SpeciesStats[s].Population / 1000000).ToString("0.00"), new Vector2(20, textY), Color.White);
+					textY += 15;
+				}
+			}
+			textY += 15;
+
+			if (curTool != null)
+			{
+				curTool.DrawTooltip(spriteBatch, state);
+			}
+
+			spriteBatch.End();
+
 		}
 	}
 }

@@ -7,6 +7,15 @@ using Microsoft.Xna.Framework;
 
 namespace Seed
 {
+	public struct WindInfo
+	{
+		public float latitude;
+		public float yaw;
+		public float tropopauseElevationMax;
+		public float coriolisPower;
+		public Vector3 tradeWind;
+	}
+
 	public class SimData
 	{
 		public int TicksPerYear = 360;
@@ -92,14 +101,19 @@ namespace Seed
 		public float maxIce = 2.0f;
 		public float iceFreezeRate = 10.0f;
 		public float iceMeltRate = 10.0f;
+		public float windElevationFactor = 1.0f / 2000;
+		public float maxWindFrictionElevation = 1000;
+
+		public WindInfo[] windInfo;
 
 
-
-		public void Init(World.SimFeature activeFeatures)
+		public void Init(World.SimFeature activeFeatures, int size)
 		{
 			TicksPerHour = TicksPerYear * (365 * 24);
 			int secondsPerYear = 365 * 24 * 60 * 60;
 			SecondsPerTick = (float)secondsPerYear / TicksPerYear;
+
+			windInfo = new WindInfo[size];
 
 			canopyGrowthRate /= TicksPerYear;
 			canopyDeathRate /= TicksPerYear;
@@ -176,6 +190,46 @@ namespace Seed
 			if (!activeFeatures.HasFlag(World.SimFeature.WindCoriolisForce )) {
 			}
 
+			for (int y = 0; y < size; y++)
+			{
+				float latitude = ((float)y / size) * 2 - 1.0f;
+				float yaw = (float)(latitude * Math.PI * 1.5f);
+				float pitch = (float)(latitude * Math.PI * 3f);
+				float absSinPitch = (float)(Math.Abs(Math.Sin(pitch)));
+				float cosYaw = (float)Math.Cos(yaw);
+				float cosPitch = (float)Math.Cos(pitch);
+				Vector3 wind = Vector3.Zero;
+				if (latitude < 0.3333 && latitude > -0.3333)
+				{
+					wind.X = absSinPitch * -cosYaw;
+					wind.Y = absSinPitch;
+				}
+				else if (latitude < 0.667 && latitude > -0.667)
+				{
+					wind.X = absSinPitch * -cosYaw;
+					wind.Y = absSinPitch;
+				}
+				else
+				{
+					wind.X = absSinPitch * cosYaw;
+					wind.Y = absSinPitch;
+				}
+				wind.Z = cosPitch;
+				wind *= tradeWindSpeed;
+
+				float coriolisPower = (float)Math.Sqrt(Math.Abs(latitude)) * (float)Math.PI / 2; ;
+				coriolisPower *= (latitude > 0) ? 1 : -1;
+				float tropopauseElevation = (1.0f - Math.Abs(latitude)) * (MaxTropopauseElevation - MinTropopauseElevation) + MinTropopauseElevation + TropopauseElevationSeason * latitude;
+
+				windInfo[y] = new WindInfo()
+				{
+					latitude = latitude,
+					yaw = yaw,
+					tropopauseElevationMax = tropopauseElevation,
+					coriolisPower = coriolisPower,
+					tradeWind = wind
+				};
+			}
 
 		}
 	}

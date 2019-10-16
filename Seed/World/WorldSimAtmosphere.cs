@@ -24,20 +24,6 @@ namespace Seed
 				}
 			}
 		}
-		public void TickWind(State state, State nextState)
-		{
-			for (int y = 0; y < Size; y++)
-			{
-				float latitude = GetLatitude(y);
-				for (int x = 0; x < Size; x++)
-				{
-					int index = GetIndex(x, y);
-					float pressure = state.Pressure[index];
-					var newWind = UpdateWind(state, x, y, latitude, pressure);
-					nextState.Wind[index] = newWind;
-				}
-			}
-		}
 
 		public void TickAtmosphere(State state, State nextState)
 		{
@@ -79,7 +65,7 @@ namespace Seed
 
 
 					float atmosphereMass = GetAtmosphereMass(elevation, elevationOrSeaLevel);
-					Vector3 windAtSurface = GetWindAtElevation(state, elevationOrSeaLevel, elevationOrSeaLevel, index, latitude, terrainNormal);
+					Vector3 windAtSurface = state.WindSurface[index];
 					float windSpeedAtSurface = windAtSurface.Length();
 					float airPressureInverse = Data.StaticPressure / pressure;
 					float tempWithSunAtGround = GetLocalTemperature(sunAngle, cloudCover, temperature);
@@ -94,7 +80,7 @@ namespace Seed
 		//			MoveHumidityToClouds(elevation, humidity, tempWithSunAtGround, cloudElevation, windAtSurface, ref newHumidity, ref newCloudCover);
 					if (cloudCover > 0)
 					{
-						var windAtCloudElevation = GetWindAtElevation(state, cloudElevation, elevationOrSeaLevel, index, latitude, terrainNormal);
+						var windAtCloudElevation = state.WindCloud[index];
 						UpdateCloudElevation(elevationOrSeaLevel, temperature, humidity, atmosphereMass, windAtCloudElevation, ref newCloudElevation);
 						MoveClouds(state, x, y, windAtCloudElevation, cloudCover, ref newCloudCover);
 						rainfall = UpdateRainfall(state, elevation, cloudCover, temperature, cloudElevation, ref newSurfaceWater, ref newCloudCover);
@@ -122,61 +108,6 @@ namespace Seed
 		private float GetLocalTemperature(float sunAngle, float cloudCover, float temperature)
 		{
 			return temperature + (1.0f - Math.Min(cloudCover / Data.cloudContentFullAbsorption, 1.0f)) * sunAngle * Data.localSunHeat;
-		}
-
-		Vector3 GetWindAtElevation(State state, float windElevation, float landElevation, int index, float latitude, Vector3 normal)
-		{
-			float tropopauseElevation = (1.0f - Math.Abs(latitude)) * (Data.MaxTropopauseElevation - Data.MinTropopauseElevation) + Data.MinTropopauseElevation + Data.TropopauseElevationSeason * latitude * (GetTimeOfYear(state.Ticks) * 2 - 1);
-			float hadleyCellHeight = Math.Min(1.0f, (windElevation - landElevation) / (tropopauseElevation - landElevation));
-
-			Vector3 wind = Vector3.Zero;
-			float yaw = (float)(latitude * Math.PI * 1.5f);
-			float pitch = (float)(latitude * Math.PI * 3f);
-			if (latitude < 0.3333 && latitude > -0.3333)
-			{
-				wind.X = (float)(Math.Abs(Math.Sin(pitch)) * -Math.Cos(yaw));
-				wind.Y = (float)(Math.Abs(Math.Sin(pitch)) * -Math.Sin(yaw + Math.PI * hadleyCellHeight));
-			}
-			else if (latitude < 0.667 && latitude > -0.667)
-			{
-				wind.X = (float)(Math.Abs(Math.Sin(pitch)) * -Math.Cos(yaw));
-				wind.Y = (float)(Math.Abs(Math.Sin(pitch)) * Math.Sin(yaw + Math.PI * hadleyCellHeight));
-			}
-			else
-			{
-				wind.X = (float)(Math.Abs(Math.Sin(pitch)) * Math.Cos(yaw));
-				wind.Y = (float)(Math.Abs(Math.Sin(pitch)) * Math.Sin(yaw + Math.PI * hadleyCellHeight));
-			}
-			wind.Z = (float)Math.Cos(pitch);
-			if (wind.Z > 0)
-			{
-				wind.Z *= 1.0f - hadleyCellHeight;
-			}
-			else
-			{
-				wind.Z *= hadleyCellHeight;
-			}
-			wind *= Data.tradeWindSpeed;
-
-
-			const float windElevationFactor = 1.0f / 2000;
-			float maxWindFrictionElevation = 1000;
-			float friction = Math.Max(0.0f, (1.0f - (windElevation - landElevation) / maxWindFrictionElevation));
-			Vector3 up = new Vector3(0, 0, 1);
-			friction = friction * friction * (1.0f - normal.Z*0.75f);
-
-
-			float coriolisPower = (float)Math.Sqrt(Math.Abs(latitude)) * (1.0f - friction);
-			int coriolisDir = latitude > 0 ? 1 : -1;
-			Vector3 pWind = Vector3.Transform(state.Wind[index], Matrix.CreateRotationZ((float)Math.PI / 2 * coriolisDir * coriolisPower));
-			wind += pWind;
-
-			// TODO: Should I be simulating pressure differentials at the tropopause to distribute heat at the upper atmosphere?
-
-			float altitudeSpeedMultiplier = 1.0f + (float)Math.Pow(Math.Min(1.0f, windElevation * windElevationFactor), 2) * (1.0f - friction);
-			wind *= altitudeSpeedMultiplier;
-
-			return wind;
 		}
 
 		public float GetPressureAtElevation(State state, int index, float elevation, float temperatureDifferential)
@@ -243,7 +174,7 @@ namespace Seed
 						float nCloudCover = state.CloudCover[neighborIndex];
 						if (nCloudCover > 0)
 						{
-							var nWindAtCloudElevation = GetWindAtElevation(state, state.CloudElevation[neighborIndex], Math.Max(state.SeaLevel, state.Elevation[neighborIndex]), neighborIndex, GetLatitude(y), state.Normal[neighborIndex]);
+							var nWindAtCloudElevation = state.WindCloud[neighborIndex];
 							switch (i)
 							{
 								case 0:
@@ -625,37 +556,6 @@ namespace Seed
 			temperatureDifferential += state.Temperature[GetIndex(x, WrapY(y - 1))] - temperature;
 			temperatureDifferential /= 4;
 			return GetPressureAtElevation(state, index, Math.Max(state.SeaLevel, elevation), temperatureDifferential);
-		}
-		private Vector3 UpdateWind(State state, int x, int y, float latitude, float pressure)
-		{
-			Vector2 pressureDifferential = Vector2.Zero;
-			Vector3 nWind = Vector3.Zero;
-			for (int i = 0; i < 4; i++)
-			{
-				var neighbor = GetNeighbor(x, y, i);
-				int nIndex = GetIndex(neighbor.X, neighbor.Y);
-				//var neighborWind = state.Wind[nIndex];
-				//nWind += neighborWind;
-
-				switch (i)
-				{
-					case 0:
-						pressureDifferential.X += state.Pressure[nIndex] - pressure;
-						break;
-					case 1:
-						pressureDifferential.X -= state.Pressure[nIndex] - pressure;
-						break;
-					case 2:
-						pressureDifferential.Y -= state.Pressure[nIndex] - pressure;
-						break;
-					case 3:
-						pressureDifferential.Y += state.Pressure[nIndex] - pressure;
-						break;
-				}
-			}
-			Vector3 newWind = new Vector3(pressureDifferential.X, pressureDifferential.Y, (pressureDifferential.X + pressureDifferential.Y) / 4) * Data.pressureDifferentialWindSpeed;
-			return newWind * ( 1.0f - Data.windInertia) + nWind / 4 * Data.windInertia;
-
 		}
 
 	}
