@@ -21,6 +21,19 @@ namespace Seed
 		public Color Color;
 		public float RestingTemperature;
 		public float TemperatureRange;
+		public float Lifespan;
+		public float speciesGrowthRate;
+		public float speciesEatRate;
+		public float starvationSpeed;
+		public float dehydrationSpeed;
+		public float speciesMaxPopulation;
+	}
+
+	public struct AnimalGroup
+	{
+		public int Species;
+		public Vector2 Position;
+		public float Population;
 	}
 
 	public struct SpeciesStat
@@ -30,12 +43,13 @@ namespace Seed
 	public partial class World
 	{
 		//		float MaxCloudElevation = ;
-
+		public int MaxAnimals;
 		public int Size;
 		public float TimeTillTick = 0.00001f;
 		public float TimeScale = 1.0f;
 		public float TicksPerSecond = 1.0f;
 		public const int StateCount = 4;
+		public const int MaxGroupsPerTile = 16;
 		public State[] States = new State[StateCount];
 		const int ProbeCount = 3;
 		public Probe[] Probes = new Probe[ProbeCount];
@@ -58,6 +72,7 @@ namespace Seed
 
 			public SpeciesType[] Species;
 			public SpeciesStat[] SpeciesStats;
+			public AnimalGroup[] Animals;
 
 			public float[] Elevation;
 			public float[] Temperature;
@@ -74,8 +89,8 @@ namespace Seed
 			public float[] SubmergedIce;
 			public float[] SoilFertility;
 			public float[] Canopy;
-			public float[] Population;
 			public float[] Pressure;
+			public int[] AnimalsPerTile;
 			public Vector3[] WindCloud;
 			public Vector3[] WindSurface;
 			public Vector3[] Wind;
@@ -92,6 +107,7 @@ namespace Seed
 		{
 			Size = size;
 			int s = Size * Size;
+			MaxAnimals = s * 8;
 
 			Data = new SimData();
 			ActiveFeatures = SimFeature.All;
@@ -123,8 +139,13 @@ namespace Seed
 				States[i].Pressure = new float[s];
 				States[i].FlowDirection = new Vector2[s];
 				States[i].Normal = new Vector3[s];
+				States[i].AnimalsPerTile = new int[s * MaxGroupsPerTile];
+				for (int j=0;j<s* MaxGroupsPerTile; j++)
+				{
+					States[i].AnimalsPerTile[j] = -1;
+				}
 
-				States[i].Population = new float[s * MaxSpecies];
+				States[i].Animals = new AnimalGroup[MaxAnimals];
 				States[i].Species = new SpeciesType[MaxSpecies];
 				States[i].SpeciesStats = new SpeciesStat[MaxSpecies];
 			}
@@ -177,10 +198,6 @@ namespace Seed
 		public int GetIndex(int x, int y)
 		{
 			return y * Size + x;
-		}
-		public int GetSpeciesIndex(int x, int y, int s)
-		{
-			return y * Size + x + s * Size*Size;
 		}
 
 		public float GetTimeOfYear(int ticks)

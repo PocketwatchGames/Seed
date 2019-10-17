@@ -44,19 +44,16 @@ namespace Seed
 			spriteBatch.DrawString(gui.Font, "SoilFertility: " + (int)(state.SoilFertility[index] * 100), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "Canopy: " + (int)(state.Canopy[index] * 100), new Vector2(5, textY += 15), Color.White);
 			//	spriteBatch.DrawString(font, "Wind: " + Wind[index], new Vector2(5, textY += 15), Color.White);
-			for (int s = 0; s < World.MaxSpecies; s++)
+			for (int s = 0; s < World.MaxGroupsPerTile; s++)
 			{
-				int speciesIndex = gui.World.GetSpeciesIndex(gui.TileInfoPoint.X, gui.TileInfoPoint.Y, s);
-				if (state.Population[speciesIndex] > 0)
+				int groupIndex = state.AnimalsPerTile[index * World.MaxGroupsPerTile + s];
+				if (groupIndex >= 0 && state.Animals[groupIndex].Population > 0)
 				{
-					spriteBatch.Draw(gui.whiteTex, new Rectangle(5, textY += 15, 10, 10), null, state.Species[s].Color);
-					float population = state.Population[speciesIndex];
+					int speciesIndex = state.Animals[groupIndex].Species;
+					spriteBatch.Draw(gui.whiteTex, new Rectangle(5, textY += 15, 10, 10), null, state.Species[speciesIndex].Color);
+					float population = state.Animals[groupIndex].Population;
 					spriteBatch.DrawString(gui.Font,
-						state.Species[s].Name + ": " + ((int)population) +
-						" +" + gui.World.Data.speciesGrowthRate.ToString("0.000") +
-						" Starvation: " + gui.World.GetStarvation(gui.World.GetPopulationDensity(population), state.Canopy[index]).ToString("0.000") +
-						" Dehydration: " + gui.World.GetDehydration(gui.World.GetPopulationDensity(population), gui.World.GetFreshWaterAvailability(state.SurfaceWater[index], gui.World.GetGroundWaterSaturation(state.GroundWater[index], state.WaterTableDepth[index], state.SoilFertility[index]))).ToString("0.000") +
-						" TemperatureDeath: " + gui.World.GetTemperatureDeath(ref state, state.Temperature[index], s).ToString("0.000"),
+						state.Species[speciesIndex].Name + ": " + ((int)population),
 						new Vector2(25, textY), Color.White);
 				}
 			}

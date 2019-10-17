@@ -29,28 +29,58 @@ namespace Seed
 			noise.SetFrequency(10);
 			state.SeaLevel = 0;
 
-			int numSpecies = 3;
+			int numSpecies = 4;
 			state.Species[0].Name = "Hot Herb";
 			state.Species[0].Food = SpeciesType.FoodType.Herbivore;
+			state.Species[0].Lifespan = 10 * Data.TicksPerYear;
+			state.Species[0].speciesMaxPopulation = 10000;
 			state.Species[0].RestingTemperature = Data.FreezingTemperature + 50;
 			state.Species[0].TemperatureRange = 5000;
+			state.Species[0].speciesGrowthRate = 1.0f / Data.TicksPerYear;
+			state.Species[0].speciesEatRate = 1.0f / Data.TicksPerYear / 10000;
+			state.Species[0].starvationSpeed = 12.0f / Data.TicksPerYear;
+			state.Species[0].dehydrationSpeed = 12.0f / Data.TicksPerYear;
 			state.Species[0].Color = new Color(100, 60, 20);
 
 			state.Species[1].Name = "Basic Beast";
 			state.Species[1].Food = SpeciesType.FoodType.Herbivore;
 			state.Species[1].RestingTemperature = Data.FreezingTemperature + 35;
+			state.Species[1].Lifespan = 20 * Data.TicksPerYear;
+			state.Species[1].speciesMaxPopulation = 10000;
 			state.Species[1].TemperatureRange = 3000;
+			state.Species[1].speciesGrowthRate = 1.0f / Data.TicksPerYear;
+			state.Species[1].speciesEatRate = 1.0f / Data.TicksPerYear / 10000;
+			state.Species[1].starvationSpeed = 12.0f / Data.TicksPerYear;
+			state.Species[1].dehydrationSpeed = 12.0f / Data.TicksPerYear;
 			state.Species[1].Color = new Color(120, 100, 20);
 
 			state.Species[2].Name = "Supacold";
 			state.Species[2].Food = SpeciesType.FoodType.Herbivore;
+			state.Species[2].Lifespan = 15 * Data.TicksPerYear;
+			state.Species[2].speciesMaxPopulation = 10000;
 			state.Species[2].RestingTemperature = Data.FreezingTemperature + 20;
 			state.Species[2].TemperatureRange = 3000;
+			state.Species[2].speciesGrowthRate = 1.0f / Data.TicksPerYear;
+			state.Species[2].speciesEatRate = 1.0f / Data.TicksPerYear / 10000;
+			state.Species[2].starvationSpeed = 12.0f / Data.TicksPerYear;
+			state.Species[2].dehydrationSpeed = 12.0f / Data.TicksPerYear;
 			state.Species[2].Color = new Color(60, 20, 100);
 
-			for (int x = 0; x < Size; x++)
+			state.Species[3].Name = "Eatasaurus";
+			state.Species[3].Food = SpeciesType.FoodType.Carnivore;
+			state.Species[3].RestingTemperature = Data.FreezingTemperature + 30;
+			state.Species[3].Lifespan = 15 * Data.TicksPerYear;
+			state.Species[3].speciesMaxPopulation = 10000;
+			state.Species[3].TemperatureRange = 4000;
+			state.Species[3].speciesGrowthRate = 1.0f / Data.TicksPerYear;
+			state.Species[3].speciesEatRate = 1.0f / Data.TicksPerYear;
+			state.Species[3].starvationSpeed = 12.0f / Data.TicksPerYear;
+			state.Species[3].dehydrationSpeed = 12.0f / Data.TicksPerYear;
+			state.Species[3].Color = new Color(255, 0, 50);
+			int animalCount = 0;
+			for (int y = 0; y < Size; y++)
 			{
-				for (int y = 0; y < Size; y++)
+				for (int x = 0; x < Size; x++)
 				{
 					int index = GetIndex(x, y);
 					var e =
@@ -75,8 +105,21 @@ namespace Seed
 
 						for (int s = 0; s < numSpecies; s++)
 						{
-							int speciesIndex = GetSpeciesIndex(x, y, s);
-							state.Population[speciesIndex] = (short)Math.Max(0, GetPerlinMinMax(noise, x, y, 1.0f, 10000 + 1000 * s, -Data.speciesMaxPopulation, Data.speciesMaxPopulation));
+							float p = (short)Math.Max(0, GetPerlinMinMax(noise, x, y, 1.0f, 10000 + 1000 * s, -state.Species[s].speciesMaxPopulation, state.Species[s].speciesMaxPopulation));
+							if (p > 0)
+							{
+								int animalTileIndex = index * MaxGroupsPerTile;
+								for (int j=0;j<MaxGroupsPerTile;j++)
+								{
+									if (state.AnimalsPerTile[animalTileIndex + j] == -1)
+									{
+										int groupIndex = animalCount++;
+										state.AnimalsPerTile[animalTileIndex + j] = groupIndex;
+										state.Animals[groupIndex] = new AnimalGroup() { Species = s, Population = p, Position = new Vector2(x + 0.5f, y + 0.5f) };
+										break;
+									}
+								}
+							}
 						}
 
 					}

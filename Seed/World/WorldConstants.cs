@@ -26,15 +26,9 @@ namespace Seed
 
 		public float canopyGrowthRate = 100.0f;
 		public float canopyDeathRate = 0.2f;
-		public float speciesGrowthRate = 1.0f;
-		public float speciesDeathRate = 0.025f;
-		public float speciesMaxPopulation = 10000;
-		public float speciesEatRate = 1.0f;
 		public float freshWaterMaxAvailability = 0.1f;
 		public float populationExpansionPercent = 0.2f;
 		public float minPopulationDensityForExpansion = 0.1f;
-		public float starvationSpeed = 12.0f;
-		public float dehydrationSpeed = 12.0f;
 		public float carbonDioxide = 0.001f;
 
 		public float MaxElevation = 10000.0f;
@@ -117,11 +111,6 @@ namespace Seed
 
 			canopyGrowthRate /= TicksPerYear;
 			canopyDeathRate /= TicksPerYear;
-			speciesGrowthRate /= TicksPerYear;
-			speciesDeathRate /= TicksPerYear;
-			speciesEatRate /= TicksPerYear;
-			starvationSpeed /= TicksPerYear;
-			dehydrationSpeed /= TicksPerYear;
 
 			EvapRateWind /= TicksPerYear;
 			EvapRateTemperature /= TicksPerYear;

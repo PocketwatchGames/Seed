@@ -209,26 +209,17 @@ namespace Seed
 
 			if (showLayers.HasFlag(Layers.Animals))
 			{
-				for (int x = 0; x < Size; x++)
+				for (int a = 0; a < MaxAnimals; a++)
 				{
-					for (int y = 0; y < Size; y++)
+					if (state.Animals[a].Population > 0)
 					{
-
-						for (int s = 0; s < MaxSpecies; s++)
+						Rectangle rect = new Rectangle((int)state.Animals[a].Position.X * tileRenderSize, (int)state.Animals[a].Position.Y * tileRenderSize, tileRenderSize, tileRenderSize);
+						int p = MathHelper.Clamp((int)Math.Ceiling(tileRenderSize * (float)state.Animals[a].Population / state.Species[state.Animals[a].Species].speciesMaxPopulation), 0, tileRenderSize);
+						for (int i = 0; i < p; i++)
 						{
-							int sIndex = GetSpeciesIndex(x, y, s);
-							float pop = state.Population[sIndex];
-							if (pop > 0)
-							{
-								Rectangle rect = new Rectangle(x * tileRenderSize, y * tileRenderSize, tileRenderSize, tileRenderSize);
-								int p = MathHelper.Clamp((int)Math.Ceiling(tileRenderSize * (float)pop / Data.speciesMaxPopulation), 0, tileRenderSize);
-								for (int i = 0; i < p; i++)
-								{
-									int screenX = rect.X + i * 2;
-									int size = i == p - 1 ? 1 : 3;
-									spriteBatch.Draw(whiteTex, new Rectangle(screenX, rect.Y + (int)(tileRenderSize * (Math.Cos(screenX + rect.Y + (float)gameTime.TotalGameTime.Ticks / TimeSpan.TicksPerSecond * Math.Sqrt(TimeScale)) / 2 + 0.5f)), size, size), state.Species[s].Color);
-								}
-							}
+							int screenX = rect.X + i * 2;
+							int size = i == p - 1 ? 1 : 3;
+							spriteBatch.Draw(whiteTex, new Rectangle(screenX, rect.Y + (int)(tileRenderSize * (Math.Cos(screenX + rect.Y + (float)gameTime.TotalGameTime.Ticks / TimeSpan.TicksPerSecond * Math.Sqrt(TimeScale)) / 2 + 0.5f)), size, size), state.Species[state.Animals[a].Species].Color);
 						}
 					}
 				}
