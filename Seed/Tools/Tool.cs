@@ -24,12 +24,34 @@ namespace Seed
 		public abstract void OnMouseUp(Point p);
 		public abstract void OnMouseWheel(float delta);
 
+
+		public static void DrawSelection(SpriteBatch spriteBatch, WorldGUI gui, World.State state)
+		{
+			spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
+			for (int i = 0; i < gui.AnimalsSelected.Count; i++)
+			{
+				int animalIndex = gui.AnimalsSelected[i];
+				spriteBatch.Draw(
+					gui.whiteTex,
+					new Vector2(state.Animals[animalIndex].Position.X * gui.World.tileRenderSize + gui.World.tileRenderSize / 2, state.Animals[animalIndex].Position.Y * gui.World.tileRenderSize + gui.World.tileRenderSize / 2),
+					null,
+					Color.LightPink * 0.5f,
+					0,
+					new Vector2(0.5f, 0.5f),
+					8,
+					SpriteEffects.None,
+					0);
+
+			}
+			spriteBatch.End();
+		}
 		public static void DrawInfoTooltip(SpriteBatch spriteBatch, WorldGUI gui, World.State state)
 		{
 			int index = gui.World.GetIndex(gui.TileInfoPoint.X, gui.TileInfoPoint.Y);
 			int textY = 300;
 
 			spriteBatch.DrawString(gui.Font, "Index: " + index, new Vector2(5, textY += 15), Color.White);
+			spriteBatch.DrawString(gui.Font, "Plate: " + state.Plate[index], new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "Elevation: " + (int)(state.Elevation[index]), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "Temperature: " + (int)(state.Temperature[index] - gui.World.Data.FreezingTemperature), new Vector2(5, textY += 15), Color.White);
 			spriteBatch.DrawString(gui.Font, "Pressure: " + (state.Pressure[index] / gui.World.Data.StaticPressure).ToString("0.00"), new Vector2(5, textY += 15), Color.White);

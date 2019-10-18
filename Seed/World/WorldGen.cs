@@ -28,11 +28,13 @@ namespace Seed
 			FastNoise noise = new FastNoise(67687);
 			noise.SetFrequency(10);
 			state.SeaLevel = 0;
+			int numPlates = 12;
 
 			int numSpecies = 4;
 			state.Species[0].Name = "Hot Herb";
 			state.Species[0].Food = SpeciesType.FoodType.Herbivore;
 			state.Species[0].Lifespan = 10 * Data.TicksPerYear;
+			state.Species[0].MovementSpeed = 0.1f / Data.tileSize * Data.SecondsPerTick;
 			state.Species[0].speciesMaxPopulation = 10000;
 			state.Species[0].RestingTemperature = Data.FreezingTemperature + 50;
 			state.Species[0].TemperatureRange = 5000;
@@ -46,6 +48,7 @@ namespace Seed
 			state.Species[1].Food = SpeciesType.FoodType.Herbivore;
 			state.Species[1].RestingTemperature = Data.FreezingTemperature + 35;
 			state.Species[1].Lifespan = 20 * Data.TicksPerYear;
+			state.Species[1].MovementSpeed = 0.1f / Data.tileSize * Data.SecondsPerTick;
 			state.Species[1].speciesMaxPopulation = 10000;
 			state.Species[1].TemperatureRange = 3000;
 			state.Species[1].speciesGrowthRate = 1.0f / Data.TicksPerYear;
@@ -57,6 +60,7 @@ namespace Seed
 			state.Species[2].Name = "Supacold";
 			state.Species[2].Food = SpeciesType.FoodType.Herbivore;
 			state.Species[2].Lifespan = 15 * Data.TicksPerYear;
+			state.Species[2].MovementSpeed = 0.1f / Data.tileSize * Data.SecondsPerTick;
 			state.Species[2].speciesMaxPopulation = 10000;
 			state.Species[2].RestingTemperature = Data.FreezingTemperature + 20;
 			state.Species[2].TemperatureRange = 3000;
@@ -70,6 +74,7 @@ namespace Seed
 			state.Species[3].Food = SpeciesType.FoodType.Carnivore;
 			state.Species[3].RestingTemperature = Data.FreezingTemperature + 30;
 			state.Species[3].Lifespan = 15 * Data.TicksPerYear;
+			state.Species[3].MovementSpeed = 0.1f / Data.tileSize * Data.SecondsPerTick;
 			state.Species[3].speciesMaxPopulation = 10000;
 			state.Species[3].TemperatureRange = 4000;
 			state.Species[3].speciesGrowthRate = 1.0f / Data.TicksPerYear;
@@ -116,12 +121,33 @@ namespace Seed
 										int groupIndex = animalCount++;
 										state.AnimalsPerTile[animalTileIndex + j] = groupIndex;
 										state.Animals[groupIndex] = new AnimalGroup() { Species = s, Population = p, Position = new Vector2(x + 0.5f, y + 0.5f) };
+										state.Animals[groupIndex].Destination = state.Animals[groupIndex].Position;
 										break;
 									}
 								}
 							}
 						}
 
+					}
+				}
+			}
+
+			for (int i=1;i< numPlates; i++)
+			{
+				const float MaxPlateRadius = 40;
+				const float MinPlateRadius = 2;
+				Point plateCenter = new Point((int)(Size * (noise.GetWhiteNoiseInt(i, 0))/2+0.5f), (int)(Size * (noise.GetWhiteNoiseInt(i, 1)/2+0.5f)));
+				float radius = (noise.GetWhiteNoiseInt(i, 2)/2+0.5f) * (MaxPlateRadius - MinPlateRadius) + MinPlateRadius;
+				for (int x = (int)-Math.Ceiling(radius); x < (int)Math.Ceiling(radius); x++)
+				{
+					for (int y = (int)-Math.Ceiling(radius); y < (int)Math.Ceiling(radius); y++)
+					{
+						Point pos = new Point(WrapX(plateCenter.X + x), WrapY(plateCenter.Y + y));
+						Vector2 diff = new Vector2(x, y);
+						if (diff.LengthSquared() <= radius * radius)
+						{
+							state.Plate[GetIndex(pos.X, pos.Y)] = i;
+						}
 					}
 				}
 			}

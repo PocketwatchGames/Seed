@@ -27,12 +27,14 @@ namespace Seed
 		public float starvationSpeed;
 		public float dehydrationSpeed;
 		public float speciesMaxPopulation;
+		public float MovementSpeed;
 	}
 
 	public struct AnimalGroup
 	{
 		public int Species;
 		public Vector2 Position;
+		public Vector2 Destination;
 		public float Population;
 	}
 
@@ -54,7 +56,6 @@ namespace Seed
 		const int ProbeCount = 3;
 		public Probe[] Probes = new Probe[ProbeCount];
 		public int CurStateIndex;
-		public int LastStateIndex;
 		public int CurRenderStateIndex;
 		public int LastRenderStateIndex;
 		public object DrawLock = new object();
@@ -74,6 +75,7 @@ namespace Seed
 			public SpeciesStat[] SpeciesStats;
 			public AnimalGroup[] Animals;
 
+			public int[] Plate;
 			public float[] Elevation;
 			public float[] Temperature;
 			public float[] Humidity;
@@ -99,7 +101,41 @@ namespace Seed
 
 			public object Clone()
 			{
-				return MemberwiseClone();
+				State o = new State();
+				o.Ticks = Ticks;
+				o.AtmosphereCO2 = AtmosphereCO2;
+				o.AtmosphereO2 = AtmosphereO2;
+				o.AtmosphereN = AtmosphereN;
+				o.GlobalTemperature = GlobalTemperature;
+				o.SeaLevel = SeaLevel;
+
+				o.Species = (SpeciesType[])Species.Clone();
+				o.SpeciesStats = (SpeciesStat[])SpeciesStats.Clone();
+				o.Animals = (AnimalGroup[])Animals.Clone();
+				o.Plate = (int[])Plate.Clone();
+				o.Elevation = (float[])Elevation.Clone();
+				o.Temperature = (float[])Temperature.Clone();
+				o.Humidity = (float[])Humidity.Clone();
+				o.Rainfall = (float[])Rainfall.Clone();
+				o.Evaporation = (float[])Evaporation.Clone();
+				o.CloudCover = (float[])CloudCover.Clone();
+				o.CloudElevation = (float[])CloudElevation.Clone();
+				o.WaterTableDepth = (float[])WaterTableDepth.Clone();
+				o.GroundWater = (float[])GroundWater.Clone();
+				o.SurfaceWater = (float[])SurfaceWater.Clone();
+				o.WaterSalinity = (float[])WaterSalinity.Clone();
+				o.SurfaceIce = (float[])SurfaceIce.Clone();
+				o.SubmergedIce = (float[])SubmergedIce.Clone();
+				o.SoilFertility = (float[])SoilFertility.Clone();
+				o.Canopy = (float[])Canopy.Clone();
+				o.Pressure = (float[])Pressure.Clone();
+				o.AnimalsPerTile = (int[])AnimalsPerTile.Clone();
+				o.WindCloud = (Vector3[])WindCloud.Clone();
+				o.WindSurface = (Vector3[])WindSurface.Clone();
+				o.Wind = (Vector3[])Wind.Clone();
+				o.FlowDirection = (Vector2[])FlowDirection.Clone();
+				o.Normal = (Vector3[])Normal.Clone();
+				return o;
 			}
 		}
 
@@ -118,6 +154,7 @@ namespace Seed
 			for (int i = 0; i < StateCount; i++)
 			{
 				States[i] = new State();
+				States[i].Plate = new int[s];
 				States[i].Elevation = new float[s];
 				States[i].CloudElevation = new float[s];
 				States[i].Temperature = new float[s];
@@ -164,17 +201,18 @@ namespace Seed
 					{
 						TimeTillTick += TicksPerSecond;
 
-						int nextStateIndex = (CurStateIndex + 1) % StateCount;
-						lock (DrawLock)
-						{
-							while (nextStateIndex == LastRenderStateIndex || nextStateIndex == CurRenderStateIndex)
-							{
-								nextStateIndex = (nextStateIndex + 1) % StateCount;
-							}
-						}
-
 						lock (InputLock)
 						{
+							int nextStateIndex = (CurStateIndex + 1) % StateCount;
+							lock (DrawLock)
+							{
+								while (nextStateIndex == LastRenderStateIndex || nextStateIndex == CurRenderStateIndex)
+								{
+									nextStateIndex = (nextStateIndex + 1) % StateCount;
+								}
+							}
+
+							States[nextStateIndex] = (State)States[CurStateIndex].Clone();
 							Tick(States[CurStateIndex], States[nextStateIndex]);
 
 							// TODO: why can't i edit this in the tick call?  it's a class, so it should be pass by reference?

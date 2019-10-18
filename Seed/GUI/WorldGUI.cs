@@ -33,6 +33,7 @@ namespace Seed
 			new Tuple<World.Layers, Keys>(World.Layers.RelativeHumidity, Keys.F8),
 			new Tuple<World.Layers, Keys>(World.Layers.Rainfall, Keys.F9),
 			new Tuple<World.Layers, Keys>(World.Layers.Wind, Keys.F10),
+			new Tuple<World.Layers, Keys>(World.Layers.Plates, Keys.F11),
 		};
 
 
@@ -43,6 +44,7 @@ namespace Seed
 
 		public List<Tool> Tools = new List<Tool>();
 		public Point TileInfoPoint;
+		public List<int> AnimalsSelected = new List<int>();
 
 		public World World;
 
@@ -64,6 +66,8 @@ namespace Seed
 			Tools.Add(new ToolProbe() { Gui = this, Name = "Probe 1", HotKey = Keys.D4, ProbeIndex = 0 });
 			Tools.Add(new ToolProbe() { Gui = this, Name = "Probe 2", HotKey = Keys.D5, ProbeIndex = 1 });
 			Tools.Add(new ToolProbe() { Gui = this, Name = "Probe 3", HotKey = Keys.D6, ProbeIndex = 2 });
+			Tools.Add(new ToolTectonic() { Gui = this, Name = "Plate Tectonics", HotKey = Keys.D7 });
+			Tools.Add(new ToolMove() { Gui = this, Name = "Move", HotKey = Keys.M });
 			SelectTool(0);
 
 		}
@@ -184,6 +188,14 @@ namespace Seed
 
 			World.Update(gameTime);
 
+
+			for (int i=0; i<AnimalsSelected.Count;i++)
+			{
+				if (World.States[World.CurStateIndex].Animals[AnimalsSelected[i]].Population == 0)
+				{
+					AnimalsSelected.RemoveAt(i--);
+				}
+			}
 		}
 
 		Tool GetTool(int index)

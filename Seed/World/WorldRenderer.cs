@@ -35,7 +35,7 @@ namespace Seed
 			Rainfall = 1 << 17,
 			Probes = 1 << 18,
 			WaterVapor = 1 << 19,
-
+			Plates = 1 << 20,
 		}
 
 		struct CVP
@@ -56,8 +56,36 @@ namespace Seed
 			return colors[colors.Count - 1].Color;
 		}
 
+		Color Lerp(float value, List<float> values, List<Color> colors)
+		{
+			for (int i = 0; i < values.Count - 1; i++)
+			{
+				if (value < values[i + 1])
+				{
+					return Color.Lerp(colors[i], colors[i + 1], (value - values[i]) / (values[i + 1] - values[i]));
+				}
+			}
+			return colors[colors.Count - 1];
+		}
+
 		float stateLerpT = 0;
 		public int tileRenderSize = 10;
+		public const int MaxPlateColors = 12;
+		Color[] PlateColors = new Color[MaxPlateColors]
+		{
+			new Color(1.0f,0,0),
+			new Color(0,1.0f,0),
+			new Color(0,0,1.0f),
+			new Color(1.0f,1,0),
+			new Color(1.0f,0,1),
+			new Color(0,1.0f,1),
+			new Color(1,0.5f,0),
+			new Color(0.5f,1,0),
+			new Color(1,0,0.5f),
+			new Color(0.5f,0,1),
+			new Color(0,1,0.5f),
+			new Color(0,0.5f,1),
+		};
 		public void Draw(GameTime gameTime, SpriteBatch spriteBatch, Layers showLayers, Texture2D whiteTex)
 		{
 			lock (DrawLock)
@@ -91,7 +119,11 @@ namespace Seed
 					{
 						if (showLayers.HasFlag(Layers.ElevationSubtle))
 						{
-							color = Color.Lerp(Color.DarkBlue, Color.Blue, (state.SeaLevel - elevation) / Data.MinElevation);
+							color = Lerp(new List<CVP> {
+								new CVP(Color.Black, Data.MinElevation),
+								new CVP(Color.Blue, state.SeaLevel - 500),
+								new CVP(new Color(30,60,255,255), state.SeaLevel), },
+								elevation);
 						}
 						else
 						{
@@ -111,7 +143,7 @@ namespace Seed
 
 						if (showLayers.HasFlag(Layers.ElevationSubtle))
 						{
-							color = Lerp(new List<CVP> { new CVP(Color.Black, -2000), new CVP(color, 0), new CVP(Color.White, 2000) }, elevation);
+							color = Lerp(new List<CVP> { new CVP(Color.Black, -1000), new CVP(color, 1000), new CVP(Color.White, 3000) }, elevation);
 						}
 
 						if (showLayers.HasFlag(Layers.Vegetation))
@@ -193,15 +225,22 @@ namespace Seed
 					}
 					else if (showLayers.HasFlag(Layers.Elevation))
 					{
-						if (elevation < state.SeaLevel)
-						{
-							color = Color.Blue * normalizedElevation;
-						}
-						else
-						{
-							color = Color.White * normalizedElevation;
-						}
-						color.A = 255;
+						color = Lerp(
+							new List<CVP> {
+								new CVP(Color.Black, Data.MinElevation),
+								new CVP(Color.DarkBlue, (state.SeaLevel - Data.MinElevation)/2+Data.MinElevation),
+								new CVP(Color.LightBlue, state.SeaLevel),
+								new CVP(Color.SaddleBrown, state.SeaLevel+1),
+								new CVP(Color.LightGray, (Data.MaxElevation-state.SeaLevel)/4+state.SeaLevel),
+								new CVP(Color.White, Data.MaxElevation) },
+							elevation);
+						spriteBatch.Draw(whiteTex, rect, color);
+					}
+					else if (showLayers.HasFlag(Layers.Plates))
+					{
+						float elevationT = elevation / Data.MaxElevation;
+						color = Color.Lerp(Color.Black,Color.White, Math.Sign(elevation)* (float)Math.Sqrt(Math.Abs(elevationT))/2+0.5f);
+						color = Color.Lerp(color, PlateColors[state.Plate[index]% MaxPlateColors], 0.25f);
 						spriteBatch.Draw(whiteTex, rect, color);
 					}
 				}
@@ -213,13 +252,13 @@ namespace Seed
 				{
 					if (state.Animals[a].Population > 0)
 					{
-						Rectangle rect = new Rectangle((int)state.Animals[a].Position.X * tileRenderSize, (int)state.Animals[a].Position.Y * tileRenderSize, tileRenderSize, tileRenderSize);
+						Rectangle rect = new Rectangle((int)(state.Animals[a].Position.X * tileRenderSize), (int)(state.Animals[a].Position.Y * tileRenderSize), tileRenderSize, tileRenderSize);
 						int p = MathHelper.Clamp((int)Math.Ceiling(tileRenderSize * (float)state.Animals[a].Population / state.Species[state.Animals[a].Species].speciesMaxPopulation), 0, tileRenderSize);
 						for (int i = 0; i < p; i++)
 						{
-							int screenX = rect.X + i * 2;
+							int screenX = rect.X + i * 2 - p;
 							int size = i == p - 1 ? 1 : 3;
-							spriteBatch.Draw(whiteTex, new Rectangle(screenX, rect.Y + (int)(tileRenderSize * (Math.Cos(screenX + rect.Y + (float)gameTime.TotalGameTime.Ticks / TimeSpan.TicksPerSecond * Math.Sqrt(TimeScale)) / 2 + 0.5f)), size, size), state.Species[state.Animals[a].Species].Color);
+							spriteBatch.Draw(whiteTex, new Rectangle(screenX, rect.Y + (int)(tileRenderSize * (Math.Cos(screenX + rect.Y + (float)gameTime.TotalGameTime.Ticks / TimeSpan.TicksPerSecond * Math.Sqrt(TimeScale)) / 2)), size, size), state.Species[state.Animals[a].Species].Color);
 						}
 					}
 				}

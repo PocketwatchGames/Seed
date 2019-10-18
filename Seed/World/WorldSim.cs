@@ -65,7 +65,6 @@ namespace Seed
 
 		public void Tick(State state, State nextState)
 		{
-			nextState = (State)state.Clone();
 			nextState.SpeciesStats = new SpeciesStat[MaxSpecies];
 
 			List<Task> simTasks = new List<Task>();
