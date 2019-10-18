@@ -49,7 +49,7 @@ namespace Seed
 		public World World;
 
 		public Vector2 CameraPos = new Vector2(50,50);
-		public float Zoom { get { return 0.5f + 0.5f * (float)Math.Pow(ZoomLevel + 0.5f, 4); } }
+		public float Zoom { get { return 0.5f + 2.5f * (float)Math.Pow(ZoomLevel + 0.5f, 4); } }
 		public float ZoomLevel = 0.5f;
 
 		public long _tickTimer;
@@ -60,14 +60,15 @@ namespace Seed
 			World = world;
 			world.TimeScale = _timeScales[_timeScaleIndex];
 
-			Tools.Add(new ToolSelect() { Gui = this, Name = "Info", HotKey = Keys.D1 });
-			Tools.Add(new ToolElevation() { Gui = this, Name = "Elevation Up", HotKey = Keys.D2, DeltaPerSecond = 1000.0f });
-			Tools.Add(new ToolElevation() { Gui = this, Name = "Elevation Down", HotKey = Keys.D3, DeltaPerSecond = -1000.0f });
-			Tools.Add(new ToolProbe() { Gui = this, Name = "Probe 1", HotKey = Keys.D4, ProbeIndex = 0 });
-			Tools.Add(new ToolProbe() { Gui = this, Name = "Probe 2", HotKey = Keys.D5, ProbeIndex = 1 });
-			Tools.Add(new ToolProbe() { Gui = this, Name = "Probe 3", HotKey = Keys.D6, ProbeIndex = 2 });
-			Tools.Add(new ToolTectonic() { Gui = this, Name = "Plate Tectonics", HotKey = Keys.D7 });
+			Tools.Add(new ToolSelect() { Gui = this, Name = "Info", HotKey = Keys.Tab });
+			Tools.Add(new ToolProbe() { Gui = this, Name = "Probe 1", HotKey = Keys.D1, ProbeIndex = 0 });
+			Tools.Add(new ToolProbe() { Gui = this, Name = "Probe 2", HotKey = Keys.D2, ProbeIndex = 1 });
+			Tools.Add(new ToolProbe() { Gui = this, Name = "Probe 3", HotKey = Keys.D3, ProbeIndex = 2 });
+			Tools.Add(new ToolTectonic() { Gui = this, Name = "Plate Tectonics", HotKey = Keys.LeftShift });
+			Tools.Add(new ToolSpawn() { Gui = this, Name = "Spawn", HotKey = Keys.Enter });
 			Tools.Add(new ToolMove() { Gui = this, Name = "Move", HotKey = Keys.M });
+			Tools.Add(new ToolElevation() { Gui = this, Name = "Elevation Up", HotKey = Keys.OemPeriod, DeltaPerSecond = 1000.0f });
+			Tools.Add(new ToolElevation() { Gui = this, Name = "Elevation Down", HotKey = Keys.OemComma, DeltaPerSecond = -1000.0f });
 			SelectTool(0);
 
 		}

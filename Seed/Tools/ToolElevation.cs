@@ -53,8 +53,11 @@ namespace Seed
 			{
 				lock (Gui.World.InputLock)
 				{
-					float dt = (float)gameTime.ElapsedGameTime.Ticks / TimeSpan.TicksPerSecond;
+					var nextStateIndex = Gui.World.AdvanceState();
 					var state = Gui.World.States[Gui.World.CurStateIndex];
+					var nextState = Gui.World.States[nextStateIndex];
+
+					float dt = (float)gameTime.ElapsedGameTime.Ticks / TimeSpan.TicksPerSecond;
 					for (int i = (int)-Math.Ceiling(BrushSize); i <= Math.Ceiling(BrushSize); i++)
 					{
 						for (int j = (int)-Math.Ceiling(BrushSize); j <= Math.Ceiling(BrushSize); j++)
@@ -70,10 +73,12 @@ namespace Seed
 									continue;
 								}
 								int index = Gui.World.GetIndex(x, y);
-								state.Elevation[index] += distT * DeltaPerSecond * dt;
+								nextState.Elevation[index] += distT * DeltaPerSecond * dt;
 							}
 						}
 					}
+
+					Gui.World.CurStateIndex = nextStateIndex;
 
 				}
 			}

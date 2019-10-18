@@ -253,5 +253,19 @@ namespace Seed
 		{
 			return ((float)y / Size) * 2 - 1.0f;
 		}
+
+		public int AdvanceState()
+		{
+			int nextStateIndex = (CurStateIndex + 1) % World.StateCount;
+			lock (DrawLock)
+			{
+				while (nextStateIndex == LastRenderStateIndex || nextStateIndex == CurRenderStateIndex)
+				{
+					nextStateIndex = (nextStateIndex + 1) % World.StateCount;
+				}
+			}
+			States[nextStateIndex] = (State)States[CurStateIndex].Clone();
+			return nextStateIndex;
+		}
 	}
 }

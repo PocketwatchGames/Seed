@@ -33,7 +33,7 @@ namespace Seed
 				int animalIndex = gui.AnimalsSelected[i];
 				spriteBatch.Draw(
 					gui.whiteTex,
-					new Vector2(state.Animals[animalIndex].Position.X * gui.World.tileRenderSize + gui.World.tileRenderSize / 2, state.Animals[animalIndex].Position.Y * gui.World.tileRenderSize + gui.World.tileRenderSize / 2),
+					new Vector2(state.Animals[animalIndex].Position.X * gui.World.tileRenderSize, state.Animals[animalIndex].Position.Y * gui.World.tileRenderSize),
 					null,
 					Color.LightPink * 0.5f,
 					0,

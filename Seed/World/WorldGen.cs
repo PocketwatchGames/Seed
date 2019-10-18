@@ -108,25 +108,25 @@ namespace Seed
 						state.GroundWater[index] = GetPerlinMinMax(noise, x, y, 1.0f, 300, 0, state.WaterTableDepth[index] * state.SoilFertility[index] * Data.MaxSoilPorousness);
 						state.Canopy[index] = GetPerlinNormalized(noise, x, y, 2.0f, 1000);
 
-						for (int s = 0; s < numSpecies; s++)
-						{
-							float p = (short)Math.Max(0, GetPerlinMinMax(noise, x, y, 1.0f, 10000 + 1000 * s, -state.Species[s].speciesMaxPopulation, state.Species[s].speciesMaxPopulation));
-							if (p > 0)
-							{
-								int animalTileIndex = index * MaxGroupsPerTile;
-								for (int j=0;j<MaxGroupsPerTile;j++)
-								{
-									if (state.AnimalsPerTile[animalTileIndex + j] == -1)
-									{
-										int groupIndex = animalCount++;
-										state.AnimalsPerTile[animalTileIndex + j] = groupIndex;
-										state.Animals[groupIndex] = new AnimalGroup() { Species = s, Population = p, Position = new Vector2(x + 0.5f, y + 0.5f) };
-										state.Animals[groupIndex].Destination = state.Animals[groupIndex].Position;
-										break;
-									}
-								}
-							}
-						}
+						//for (int s = 0; s < numSpecies; s++)
+						//{
+						//	float p = (short)Math.Max(0, GetPerlinMinMax(noise, x, y, 1.0f, 10000 + 1000 * s, -state.Species[s].speciesMaxPopulation, state.Species[s].speciesMaxPopulation));
+						//	if (p > 0)
+						//	{
+						//		int animalTileIndex = index * MaxGroupsPerTile;
+						//		for (int j=0;j<MaxGroupsPerTile;j++)
+						//		{
+						//			if (state.AnimalsPerTile[animalTileIndex + j] == -1)
+						//			{
+						//				int groupIndex = animalCount++;
+						//				state.AnimalsPerTile[animalTileIndex + j] = groupIndex;
+						//				state.Animals[groupIndex] = new AnimalGroup() { Species = s, Population = p, Position = new Vector2(x + 0.5f, y + 0.5f) };
+						//				state.Animals[groupIndex].Destination = state.Animals[groupIndex].Position;
+						//				break;
+						//			}
+						//		}
+						//	}
+						//}
 
 					}
 				}

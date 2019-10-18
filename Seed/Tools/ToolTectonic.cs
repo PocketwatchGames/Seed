@@ -50,16 +50,7 @@ namespace Seed
 				{
 					if (Gui.TileInfoPoint != Start)
 					{
-						float dt = (float)gameTime.ElapsedGameTime.Ticks / TimeSpan.TicksPerSecond;
-						int nextStateIndex = (Gui.World.CurStateIndex + 1) % World.StateCount;
-						lock (Gui.World.DrawLock)
-						{
-							while (nextStateIndex == Gui.World.LastRenderStateIndex || nextStateIndex == Gui.World.CurRenderStateIndex)
-							{
-								nextStateIndex = (nextStateIndex + 1) % World.StateCount;
-							}
-						}
-						Gui.World.States[nextStateIndex] = (World.State)Gui.World.States[Gui.World.CurStateIndex].Clone();
+						int nextStateIndex = Gui.World.AdvanceState();
 
 						Vector2 diff = new Vector2(Gui.TileInfoPoint.X - Start.X, Gui.TileInfoPoint.Y - Start.Y);
 						Point move;
